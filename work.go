@@ -2,13 +2,23 @@ package workmanager
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/riverchu/pkg/log"
 	"github.com/riverchu/pkg/pools"
 )
 
 func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error) {
+	task := wm.taskMgr.Get(target.Token())
+	if task == nil {
+		log.Warn("no such task token %s", target.Token())
+		return
+	}
+
+	if task.IsCanceled() {
+		log.Warn("task(%s) has been canceled\ntask: %+v", task.TaskToken, target)
+		return
+	}
+
 	pool := pools.NewPool(wm.poolMgr.Size() * 4)
 	for name, conf := range configs {
 		if !conf.Active() {
@@ -23,17 +33,6 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 		}
 		go func(name WorkerName, c WorkerConfig) {
 			defer pool.Done()
-
-			task := wm.taskMgr.Get(target.Token())
-			if task == nil {
-				log.Warn("no such task token %s", target.Token())
-				return
-			}
-
-			if task.IsCanceled() {
-				log.Warn("task(%s) has been canceled on worker %s\ntask: %+v", task.TaskToken, name, target)
-				return
-			}
 
 			worker := wm.workerBuilders[name](task.Ctx, name, c.Args())
 
@@ -50,10 +49,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 	}
 	pool.WaitAll()
 
-	if err := wm.ProcessResult(results...); err != nil {
-		return nil, fmt.Errorf("resolve result fail: %w", err)
-	}
-	return results, nil
+	return wm.ProcessResult(results...)
 }
 
 func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res WorkTarget, err error) {
@@ -77,9 +73,9 @@ func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res WorkTarget, er
 }
 
 // ProcessResult resolve result
-func (wm *WorkerManager) ProcessResult(results ...WorkTarget) error {
+func (wm *WorkerManager) ProcessResult(results ...WorkTarget) (processedResult []WorkTarget, err error) {
 	if len(results) == 0 {
-		return nil
+		return nil, nil
 	}
 	log.Info("resolving %d results", len(results))
 
@@ -92,12 +88,13 @@ func (wm *WorkerManager) ProcessResult(results ...WorkTarget) error {
 	for step, results := range resultMap {
 		processor := wm.resultProcessors[step]
 		if processor == nil {
-			return errors.New("step %s result processor not found")
+			return nil, errors.New("step %s result processor not found")
 		}
-		err := processor(results...)
+		result, err := processor(results...)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		processedResult = append(processedResult, result...)
 	}
-	return nil
+	return processedResult, nil
 }
