@@ -13,7 +13,7 @@ type Work func(target WorkTarget, configs map[WorkerName]WorkerConfig) (results 
 type WorkerBuilder func(ctx context.Context, workerName WorkerName, args map[string]interface{}) Worker
 
 // StepRunner ...
-type StepRunner func(work Work, workTarget WorkTarget, to ...chan<- WorkTarget)
+type StepRunner func(work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
 
 // StepProcessor ...
 type StepProcessor func(results ...WorkTarget) ([]WorkTarget, error)

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/riverchu/pkg/log"
 	wm "github.com/riverchu/workmanager"
 )
 
@@ -22,26 +21,17 @@ var (
 	dummyBuilder wm.WorkerBuilder = func(context.Context, wm.WorkerName, map[string]interface{}) wm.Worker {
 		return &dummyWorker{finish: make(chan struct{}, 1)}
 	}
-	dummyStepRunner wm.StepRunner = func(work wm.Work, target wm.WorkTarget, to ...chan<- wm.WorkTarget) {
-		token := target.Token()
-		task := wm.GetTask(token)
-		if task == nil {
-			log.Error("task not found: %s", token)
-			return
-		}
-		defer task.Done()
-
+	dummyStepRunner wm.StepRunner = func(work wm.Work, target wm.WorkTarget, nexts ...func(wm.WorkTarget)) {
 		_, err := work(target, map[wm.WorkerName]wm.WorkerConfig{DummyWorkerA: new(wm.DummyConfig)})
 		if err != nil {
 			return
 		}
-		for _, next := range to {
+		for _, next := range nexts {
 			nextTarget := &dummyTarget{token: target.Token()}
 			if target.Step() == StepA {
 				nextTarget.step = StepB
 			}
-			task.Start()
-			next <- nextTarget
+			next(nextTarget)
 		}
 	}
 	dummyStepProcessor wm.StepProcessor = func(results ...wm.WorkTarget) ([]wm.WorkTarget, error) {
