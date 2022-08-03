@@ -61,11 +61,11 @@ func Recv(step WorkStep, target WorkTarget) error {
 
 // Task api
 
-// NewTask ...
-func NewTask(step WorkStep) (*Task, error) { return workerMgr.taskMgr.NewTask(step) }
+// AddTask ...
+func AddTask(task WorkTask) { workerMgr.taskMgr.Add(task) }
 
 // GetTask ...
-func GetTask(token string) *Task { return workerMgr.taskMgr.Get(token) }
+func GetTask(token string) WorkTask { return workerMgr.taskMgr.Get(token) }
 
 // CancelTask ...
 func CancelTask(token string) error { return workerMgr.taskMgr.CancelTask(token) }

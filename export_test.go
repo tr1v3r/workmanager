@@ -84,18 +84,15 @@ func Test_Outline(t *testing.T) {
 
 	wm.Serve()
 
-	task, err := wm.NewTask(StepA)
-	if err != nil {
-		t.Errorf("create task fail: %s", err)
-		return
-	}
+	task := wm.NewTask(context.Background())
+	wm.AddTask(task)
 
-	err = wm.Recv(StepA, &dummyTarget{token: task.TaskToken, step: StepA})
+	err := wm.Recv(StepA, &dummyTarget{token: task.Token(), step: StepA})
 	if err != nil {
 		t.Errorf("send target fail: %s", err)
 	}
 
 	<-time.NewTimer(3 * time.Second).C
 
-	t.Logf("task %+v", wm.GetTask(task.TaskToken))
+	t.Logf("task %+v", wm.GetTask(task.Token()))
 }

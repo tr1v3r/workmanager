@@ -15,7 +15,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 	}
 
 	if task.IsCanceled() {
-		log.Warn("task(%s) has been canceled\ntask: %+v", task.TaskToken, target)
+		log.Warn("task(%s) has been canceled\ntask: %+v", task.Token(), target)
 		return
 	}
 
@@ -34,7 +34,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 		go func(name WorkerName, c WorkerConfig) {
 			defer pool.Done()
 
-			worker := wm.workerBuilders[name](task.Ctx, name, c.Args())
+			worker := wm.workerBuilders[name](task.Context(), name, c.Args())
 
 			res, err := wm.work(worker, target)
 			if err != nil {
