@@ -96,12 +96,27 @@ func (wm *WorkerManager) RegisterStep(
 				log.Info("step %s runner stopped", from)
 				return wm.ctx.Err()
 			case target := <-ch:
-				wm.run(from, func() { runner(wm.Work, target, wm.pipeMgr.GetWriteChans(to...)...) })
+				wm.run(from, func() {
+					defer wm.taskMgr.Done(target.Token())
+					runner(wm.Work, target,
+						wrap(wm.taskMgr.Get(target.Token()).Start, wm.pipeMgr.GetWriteChans(to...))...,
+					)
+				})
 			}
 		}
 		return nil
 	}
 	wm.resultProcessors[from] = processor
+}
+
+func wrap(start func(), chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
+	for _, ch := range chs {
+		recvs = append(recvs, func(target WorkTarget) {
+			start()
+			ch <- target
+		})
+	}
+	return recvs
 }
 
 func (wm *WorkerManager) Serve(steps ...WorkStep) {
