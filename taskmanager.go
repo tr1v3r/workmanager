@@ -3,9 +3,6 @@ package workmanager
 import (
 	"context"
 	"sync"
-	"time"
-
-	"github.com/google/uuid"
 )
 
 // NewTaskManager ...
@@ -13,7 +10,7 @@ func NewTaskManager(ctx context.Context) *taskManager { // nolint
 	return &taskManager{
 		ctx:      ctx,
 		mu:       new(sync.RWMutex),
-		tokenMap: make(map[string]*Task),
+		tokenMap: make(map[string]WorkTask),
 	}
 }
 
@@ -21,7 +18,7 @@ type taskManager struct {
 	ctx context.Context
 
 	mu       *sync.RWMutex
-	tokenMap map[string]*Task
+	tokenMap map[string]WorkTask
 }
 
 func (t taskManager) WithContext(ctx context.Context) *taskManager {
@@ -29,24 +26,13 @@ func (t taskManager) WithContext(ctx context.Context) *taskManager {
 	return &t
 }
 
-func (t *taskManager) NewTask(step WorkStep) (task *Task, err error) {
-	taskToken := uuid.New().String()
-	c, cancel := context.WithCancel(t.ctx)
-
-	task = &Task{
-		Ctx:        c,
-		TaskToken:  taskToken,
-		StartTime:  time.Now(),
-		CancelFunc: cancel,
-	}
-
+func (t *taskManager) Add(task WorkTask) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.tokenMap[taskToken] = task
-	return
+	t.tokenMap[task.Token()] = task
 }
 
-func (t *taskManager) Get(taskToken string) *Task {
+func (t *taskManager) Get(taskToken string) WorkTask {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.tokenMap[taskToken]

@@ -44,3 +44,18 @@ type WorkTarget interface {
 
 	TTL() int
 }
+
+// WorkTask work task
+type WorkTask interface {
+	Start()
+	StartN(n int64)
+	Done()
+
+	Cancel()
+
+	IsCanceled() bool
+	IsFinished() bool
+
+	Token() string
+	Context() context.Context
+}
