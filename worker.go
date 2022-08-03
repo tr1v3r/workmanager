@@ -90,13 +90,13 @@ func (wm *WorkerManager) RegisterStep(
 	wm.mu.Lock()
 	defer wm.mu.Unlock()
 	wm.stepRunners[from] = func(wm *WorkerManager) error {
-		for ch := wm.pipeMgr.GetChan(from); ch != nil; _ = wm.limiter.Wait(wm.ctx) {
+		for ch := wm.pipeMgr.GetReadChan(from); ch != nil; _ = wm.limiter.Wait(wm.ctx) {
 			select {
 			case <-wm.ctx.Done():
 				log.Info("step %s runner stopped", from)
 				return wm.ctx.Err()
 			case target := <-ch:
-				wm.run(from, func() { runner(wm.Work, target, wm.pipeMgr.GetChans(to...)...) })
+				wm.run(from, func() { runner(wm.Work, target, wm.pipeMgr.GetWriteChans(to...)...) })
 			}
 		}
 		return nil
@@ -123,7 +123,7 @@ func (wm *WorkerManager) Serve(steps ...WorkStep) {
 }
 
 func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
-	ch := wm.pipeMgr.GetChan(step)
+	ch := wm.pipeMgr.GetWriteChan(step)
 	if ch == nil {
 		return fmt.Errorf("%s channel not found", step)
 	}
