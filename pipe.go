@@ -21,15 +21,26 @@ type pipeManager struct {
 	chanMap map[WorkStep]chan WorkTarget
 }
 
-func (pm *pipeManager) GetChan(step WorkStep) chan WorkTarget {
+func (pm *pipeManager) GetReadChan(step WorkStep) <-chan WorkTarget  { return pm.getChan(step) }
+func (pm *pipeManager) GetWriteChan(step WorkStep) chan<- WorkTarget { return pm.getChan(step) }
+
+func (pm *pipeManager) getChan(step WorkStep) chan WorkTarget {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 	return pm.chanMap[step]
 }
 
-func (pm *pipeManager) GetChans(steps ...WorkStep) (chs []chan<- WorkTarget) {
+func (pm *pipeManager) GetReadChans(steps ...WorkStep) (chs []<-chan WorkTarget) {
 	for _, step := range steps {
-		if ch := pm.GetChan(step); ch != nil {
+		if ch := pm.GetReadChan(step); ch != nil {
+			chs = append(chs, ch)
+		}
+	}
+	return chs
+}
+func (pm *pipeManager) GetWriteChans(steps ...WorkStep) (chs []chan<- WorkTarget) {
+	for _, step := range steps {
+		if ch := pm.GetWriteChan(step); ch != nil {
 			chs = append(chs, ch)
 		}
 	}
@@ -37,7 +48,7 @@ func (pm *pipeManager) GetChans(steps ...WorkStep) (chs []chan<- WorkTarget) {
 }
 
 func (pm *pipeManager) Has(step WorkStep) bool {
-	return pm.GetChan(step) != nil
+	return pm.getChan(step) != nil
 }
 
 func (pm *pipeManager) SetStep(step WorkStep, opts ...StepOption) {
