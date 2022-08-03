@@ -38,8 +38,9 @@ type WorkTarget interface {
 	Key() string
 	Step() WorkStep
 
-	Trans(step WorkStep) WorkTarget
+	Trans(step WorkStep) (WorkTarget, error)
 	ToArray() []WorkTarget
+	Combine(...WorkTarget) WorkTarget
 
 	TTL() int
 }

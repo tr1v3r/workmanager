@@ -16,7 +16,7 @@ type WorkerBuilder func(ctx context.Context, workerName WorkerName, args map[str
 type StepRunner func(work Work, workTarget WorkTarget, to ...chan<- WorkTarget)
 
 // StepProcessor ...
-type StepProcessor func(results ...WorkTarget) error
+type StepProcessor func(results ...WorkTarget) ([]WorkTarget, error)
 
 // Register register worker and step runner/processor
 func Register(
