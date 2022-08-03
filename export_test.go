@@ -44,9 +44,9 @@ var (
 			next <- nextTarget
 		}
 	}
-	dummyStepProcessor wm.StepProcessor = func(results ...wm.WorkTarget) error {
+	dummyStepProcessor wm.StepProcessor = func(results ...wm.WorkTarget) ([]wm.WorkTarget, error) {
 		fmt.Printf("got result: %+v\n", results[0])
-		return nil
+		return results, nil
 	}
 )
 
@@ -67,12 +67,13 @@ type dummyTarget struct {
 	step  wm.WorkStep
 }
 
-func (t *dummyTarget) Token() string                        { return t.token }
-func (t *dummyTarget) Key() string                          { return "" }
-func (t *dummyTarget) Step() wm.WorkStep                    { return t.step }
-func (t *dummyTarget) Trans(step wm.WorkStep) wm.WorkTarget { return t }
-func (t *dummyTarget) ToArray() []wm.WorkTarget             { return nil }
-func (t *dummyTarget) TTL() int                             { return 1 }
+func (t *dummyTarget) Token() string                                 { return t.token }
+func (t *dummyTarget) Key() string                                   { return "" }
+func (t *dummyTarget) Step() wm.WorkStep                             { return t.step }
+func (t *dummyTarget) Trans(step wm.WorkStep) (wm.WorkTarget, error) { return t, nil }
+func (t *dummyTarget) ToArray() []wm.WorkTarget                      { return nil }
+func (t *dummyTarget) Combine(...wm.WorkTarget) wm.WorkTarget        { return t }
+func (t *dummyTarget) TTL() int                                      { return 1 }
 
 func Test_Outline(t *testing.T) {
 	wm.RegisterWorker(DummyWorkerA, dummyBuilder)
