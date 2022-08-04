@@ -1,8 +1,6 @@
 package workmanager
 
 import (
-	"errors"
-
 	"github.com/riverchu/pkg/log"
 	"github.com/riverchu/pkg/pools"
 )
@@ -49,7 +47,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 	}
 	pool.WaitAll()
 
-	return wm.ProcessResult(results...)
+	return
 }
 
 func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res WorkTarget, err error) {
@@ -70,31 +68,4 @@ func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res WorkTarget, er
 	}
 
 	return
-}
-
-// ProcessResult resolve result
-func (wm *WorkerManager) ProcessResult(results ...WorkTarget) (processedResult []WorkTarget, err error) {
-	if len(results) == 0 {
-		return nil, nil
-	}
-	log.Info("resolving %d results", len(results))
-
-	resultMap := make(map[WorkStep][]WorkTarget, 4)
-	for _, res := range results {
-		if step := res.Step(); step != "" {
-			resultMap[step] = append(resultMap[step], res)
-		}
-	}
-	for step, results := range resultMap {
-		processor := wm.resultProcessors[step]
-		if processor == nil {
-			return nil, errors.New("step %s result processor not found")
-		}
-		result, err := processor(results...)
-		if err != nil {
-			return nil, err
-		}
-		processedResult = append(processedResult, result...)
-	}
-	return processedResult, nil
 }

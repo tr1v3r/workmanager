@@ -36,7 +36,6 @@ type WorkerConfig interface {
 type WorkTarget interface {
 	Token() string
 	Key() string
-	Step() WorkStep
 
 	Trans(step WorkStep) (WorkTarget, error)
 	ToArray() []WorkTarget
