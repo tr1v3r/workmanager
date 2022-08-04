@@ -97,9 +97,12 @@ func (wm *WorkerManager) RegisterStep(
 				return wm.ctx.Err()
 			case target := <-ch:
 				wm.run(from, func() {
-					defer wm.taskMgr.Done(target.Token())
-					runner(wm.Work, target,
-						wrap(wm.taskMgr.Get(target.Token()).Start, wm.pipeMgr.GetWriteChans(to...))...,
+					task := wm.taskMgr.Get(target.Token())
+					defer task.Done()
+					runner(
+						wrapWork(wm.Work, wm.resultProcessors[from]),
+						target,
+						wrapChan(task.Start, wm.pipeMgr.GetWriteChans(to...))...,
 					)
 				})
 			}
@@ -109,7 +112,20 @@ func (wm *WorkerManager) RegisterStep(
 	wm.resultProcessors[from] = processor
 }
 
-func wrap(start func(), chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
+func wrapWork(work Work, processor StepProcessor) Work {
+	return func(target WorkTarget, configs map[WorkerName]WorkerConfig) ([]WorkTarget, error) {
+		results, err := work(target, configs)
+		if err != nil {
+			return nil, err
+		}
+		if processor == nil {
+			return results, nil
+		}
+		return processor(results...)
+	}
+}
+
+func wrapChan(start func(), chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
 	for _, ch := range chs {
 		recvs = append(recvs, func(target WorkTarget) {
 			start()

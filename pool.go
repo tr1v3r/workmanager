@@ -51,7 +51,7 @@ func (p *poolManager) Add(step WorkStep, size int) {
 	if _, ok := p.m[step]; ok {
 		return
 	}
-	if size >= 0 {
+	if size <= 0 {
 		size = runtime.NumCPU() * flex
 	}
 	p.m[step] = pools.NewPool(size)

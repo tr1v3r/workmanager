@@ -27,11 +27,7 @@ var (
 			return
 		}
 		for _, next := range nexts {
-			nextTarget := &dummyTarget{token: target.Token()}
-			if target.Step() == StepA {
-				nextTarget.step = StepB
-			}
-			next(nextTarget)
+			next(&dummyTarget{token: target.Token(), step: StepB})
 		}
 	}
 	dummyStepProcessor wm.StepProcessor = func(results ...wm.WorkTarget) ([]wm.WorkTarget, error) {
@@ -59,7 +55,6 @@ type dummyTarget struct {
 
 func (t *dummyTarget) Token() string                                 { return t.token }
 func (t *dummyTarget) Key() string                                   { return "" }
-func (t *dummyTarget) Step() wm.WorkStep                             { return t.step }
 func (t *dummyTarget) Trans(step wm.WorkStep) (wm.WorkTarget, error) { return t, nil }
 func (t *dummyTarget) ToArray() []wm.WorkTarget                      { return nil }
 func (t *dummyTarget) Combine(...wm.WorkTarget) wm.WorkTarget        { return t }
