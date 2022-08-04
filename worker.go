@@ -127,6 +127,7 @@ func wrapWork(work Work, processor StepProcessor) Work {
 
 func wrapChan(start func(), chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
 	for _, ch := range chs {
+		ch := ch
 		recvs = append(recvs, func(target WorkTarget) {
 			start()
 			ch <- target
