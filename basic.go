@@ -17,7 +17,7 @@ type Worker interface {
 	GetContext() context.Context
 
 	BeforeWork()
-	Work(arg WorkTarget) (WorkTarget, error)
+	Work(arg WorkTarget) ([]WorkTarget, error)
 	AfterWork()
 
 	GetResult() WorkTarget
