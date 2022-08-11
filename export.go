@@ -59,6 +59,11 @@ func Recv(step WorkStep, target WorkTarget) error {
 	return workerMgr.Recv(step, target)
 }
 
+// SetCacher set default work manager cacher
+func SetCacher(c Cacher) {
+	workerMgr.SetCacher(c)
+}
+
 // Task api
 
 // AddTask ...

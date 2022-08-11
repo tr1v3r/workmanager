@@ -22,7 +22,10 @@ var (
 		return &dummyWorker{finish: make(chan struct{}, 1)}
 	}
 	dummyStepRunner wm.StepRunner = func(work wm.Work, target wm.WorkTarget, nexts ...func(wm.WorkTarget)) {
-		_, err := work(target, map[wm.WorkerName]wm.WorkerConfig{DummyWorkerA: new(wm.DummyConfig)})
+		_, err := work(target, map[wm.WorkerName]wm.WorkerConfig{
+			DummyWorkerA: new(wm.DummyConfig),
+			DummyWorkerB: new(wm.DummyConfig),
+		})
 		if err != nil {
 			return
 		}
