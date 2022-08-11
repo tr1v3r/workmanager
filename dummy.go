@@ -30,9 +30,7 @@ type DummyTarget struct {
 	TaskToken string
 }
 
-func (t *DummyTarget) Token() string                           { return t.TaskToken }
-func (t *DummyTarget) Key() string                             { return "" }
-func (t *DummyTarget) Trans(step WorkStep) (WorkTarget, error) { return t, nil }
-func (t *DummyTarget) ToArray() []WorkTarget                   { return nil }
-func (t *DummyTarget) Combine(...WorkTarget) WorkTarget        { return t }
-func (t *DummyTarget) TTL() int                                { return 1 }
+func (t *DummyTarget) Token() string                             { return t.TaskToken }
+func (t *DummyTarget) Key() string                               { return "" }
+func (t *DummyTarget) Trans(step WorkStep) ([]WorkTarget, error) { return t, nil }
+func (t *DummyTarget) TTL() int                                  { return 1 }
