@@ -36,6 +36,8 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 type WorkerManager struct {
 	ctx context.Context
 
+	cacher Cacher
+
 	pipeMgr *pipeManager
 	taskMgr *taskManager
 	poolMgr *poolManager
@@ -52,6 +54,8 @@ func (wm WorkerManager) WithContext(ctx context.Context) *WorkerManager {
 	wm.taskMgr = wm.taskMgr.WithContext(ctx)
 	return &wm
 }
+
+func (wm *WorkerManager) SetCacher(c Cacher) { wm.cacher = c }
 
 func (wm *WorkerManager) StartStep(step WorkStep, opts ...StepOption) {
 	if wm.pipeMgr.Has(step) { // 存在则不需处理
@@ -99,6 +103,9 @@ func (wm *WorkerManager) RegisterStep(
 				wm.run(from, func() {
 					task := wm.taskMgr.Get(target.Token())
 					defer task.Done()
+					if wm.cacher != nil && !wm.cacher.Allow(target) {
+						return
+					}
 					runner(
 						wrapWork(wm.Work, wm.resultProcessors[from]),
 						target,
