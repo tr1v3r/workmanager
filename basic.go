@@ -26,6 +26,12 @@ type Worker interface {
 	Terminate() error
 }
 
+// Cacher work target cache
+type Cacher interface {
+	// Allow to continue next steps when return true, abort step runner when return false
+	Allow(tgt WorkTarget) bool
+}
+
 // WorkerConfig worker configure
 type WorkerConfig interface {
 	Args() map[string]interface{}
