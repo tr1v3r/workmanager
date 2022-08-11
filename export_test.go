@@ -30,7 +30,7 @@ var (
 			return
 		}
 		for _, next := range nexts {
-			next(&dummyTarget{token: target.Token(), step: StepB})
+			next(&dummyTarget{DummyTarget: wm.DummyTarget{TaskToken: target.Token()}, step: StepB})
 		}
 	}
 	dummyStepProcessor wm.StepProcessor = func(results ...wm.WorkTarget) ([]wm.WorkTarget, error) {
@@ -39,29 +39,20 @@ var (
 	}
 )
 
-type dummyWorker struct{ finish chan struct{} }
-
-func (w *dummyWorker) LoadConfig(wm.WorkerConfig) wm.Worker             { return w }
-func (w *dummyWorker) WithContext(context.Context) wm.Worker            { return w }
-func (w *dummyWorker) GetContext() context.Context                      { return context.Background() }
-func (w *dummyWorker) BeforeWork()                                      {}
-func (w *dummyWorker) Work(target wm.WorkTarget) (wm.WorkTarget, error) { return target, nil }
-func (w *dummyWorker) AfterWork()                                       { w.finish <- struct{}{} }
-func (w *dummyWorker) GetResult() wm.WorkTarget                         { return &dummyTarget{} }
-func (w *dummyWorker) Finished() <-chan struct{}                        { return w.finish }
-func (w *dummyWorker) Terminate() error                                 { return nil }
-
-type dummyTarget struct {
-	token string
-	step  wm.WorkStep
+type dummyWorker struct {
+	wm.DummyWorker
+	finish chan struct{}
 }
 
-func (t *dummyTarget) Token() string                                 { return t.token }
-func (t *dummyTarget) Key() string                                   { return "" }
-func (t *dummyTarget) Trans(step wm.WorkStep) (wm.WorkTarget, error) { return t, nil }
-func (t *dummyTarget) ToArray() []wm.WorkTarget                      { return nil }
-func (t *dummyTarget) Combine(...wm.WorkTarget) wm.WorkTarget        { return t }
-func (t *dummyTarget) TTL() int                                      { return 1 }
+func (w *dummyWorker) Work(target wm.WorkTarget) ([]wm.WorkTarget, error) {
+	return []wm.WorkTarget{target}, nil
+}
+func (w *dummyWorker) Finished() <-chan struct{} { return w.finish }
+
+type dummyTarget struct {
+	wm.DummyTarget
+	step wm.WorkStep
+}
 
 func Test_Outline(t *testing.T) {
 	wm.RegisterWorker(DummyWorkerA, dummyBuilder)
@@ -75,7 +66,7 @@ func Test_Outline(t *testing.T) {
 	task := wm.NewTask(context.Background())
 	wm.AddTask(task)
 
-	err := wm.Recv(StepA, &dummyTarget{token: task.Token(), step: StepA})
+	err := wm.Recv(StepA, &dummyTarget{DummyTarget: wm.DummyTarget{TaskToken: task.Token()}, step: StepA})
 	if err != nil {
 		t.Errorf("send target fail: %s", err)
 	}

@@ -42,7 +42,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 			if res == nil {
 				return
 			}
-			results = append(results, res)
+			results = append(results, res...)
 		}(name, conf)
 	}
 	pool.WaitAll()
@@ -50,7 +50,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 	return
 }
 
-func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res WorkTarget, err error) {
+func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res []WorkTarget, err error) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Error("work panic: %v\n%v", err, catchStack())
