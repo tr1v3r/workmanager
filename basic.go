@@ -43,9 +43,7 @@ type WorkTarget interface {
 	Token() string
 	Key() string
 
-	Trans(step WorkStep) (WorkTarget, error)
-	ToArray() []WorkTarget
-	Combine(...WorkTarget) WorkTarget
+	Trans(step WorkStep) ([]WorkTarget, error)
 
 	TTL() int
 }
