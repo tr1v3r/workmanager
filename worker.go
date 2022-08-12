@@ -95,6 +95,7 @@ func (wm *WorkerManager) RegisterStep(
 	defer wm.mu.Unlock()
 	wm.stepRunners[from] = func(wm *WorkerManager) error {
 		defer catchPanic("%s step runner panic", from)
+
 		for ch := wm.pipeMgr.GetReadChan(from); ch != nil; _ = wm.limiter.Wait(wm.ctx) {
 			select {
 			case <-wm.ctx.Done():
@@ -103,6 +104,7 @@ func (wm *WorkerManager) RegisterStep(
 			case target := <-ch:
 				wm.run(from, func() {
 					defer catchPanic("%s step work panic", from)
+
 					task := wm.taskMgr.Get(target.Token())
 					defer task.Done()
 					if wm.cacher != nil && !wm.cacher.Allow(target) {
@@ -195,10 +197,4 @@ func (wm *WorkerManager) run(step WorkStep, runner func()) {
 		defer pool.Done()
 		runner()
 	}()
-}
-
-func catchPanic(format string, args ...interface{}) {
-	if e := recover(); e != nil {
-		log.Error(format+": %v", append(args, e)...)
-	}
 }
