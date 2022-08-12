@@ -20,7 +20,8 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 		}
 	}()
 	return &WorkerManager{
-		ctx:     ctx,
+		ctx: ctx,
+
 		pipeMgr: NewPipeManager(ctx),
 		taskMgr: NewTaskManager(ctx),
 		poolMgr: NewPoolManager(ctx),
@@ -193,6 +194,7 @@ func (wm *WorkerManager) run(step WorkStep, runner func()) {
 	case <-wm.ctx.Done():
 		return
 	}
+
 	go func() {
 		defer pool.Done()
 		runner()
