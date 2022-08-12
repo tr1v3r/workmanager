@@ -17,7 +17,7 @@ type DummyWorker struct{}
 
 func (c *DummyWorker) LoadConfig(WorkerConfig) Worker        { return c }
 func (c *DummyWorker) WithContext(context.Context) Worker    { return c }
-func (c *DummyWorker) GetContext() context.Context           { return nil }
+func (c *DummyWorker) GetContext() context.Context           { return context.TODO() }
 func (c *DummyWorker) BeforeWork()                           {}
 func (c *DummyWorker) Work(WorkTarget) ([]WorkTarget, error) { return nil, nil }
 func (c *DummyWorker) AfterWork()                            {}
@@ -31,6 +31,7 @@ type DummyTarget struct {
 }
 
 func (t *DummyTarget) Token() string                             { return t.TaskToken }
+func (t *DummyTarget) SetToken(token string)                     { t.TaskToken = token }
 func (t *DummyTarget) Key() string                               { return "" }
 func (t *DummyTarget) Trans(step WorkStep) ([]WorkTarget, error) { return []WorkTarget{t}, nil }
 func (t *DummyTarget) TTL() int                                  { return 1 }

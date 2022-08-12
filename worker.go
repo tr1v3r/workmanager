@@ -127,6 +127,9 @@ func wrapWork(work Work, processor StepProcessor) Work {
 		if err != nil {
 			return nil, err
 		}
+		for _, res := range results {
+			res.SetToken(target.Token())
+		}
 		if processor == nil {
 			return results, nil
 		}
