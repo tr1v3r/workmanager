@@ -19,18 +19,21 @@ const (
 
 var (
 	dummyBuilder wm.WorkerBuilder = func(context.Context, wm.WorkerName, map[string]interface{}) wm.Worker {
-		return &dummyWorker{finish: make(chan struct{}, 1)}
+		f := make(chan struct{}, 1)
+		close(f)
+		return &dummyWorker{finish: f}
 	}
 	dummyStepRunner wm.StepRunner = func(work wm.Work, target wm.WorkTarget, nexts ...func(wm.WorkTarget)) {
-		_, err := work(target, map[wm.WorkerName]wm.WorkerConfig{
+		results, err := work(target, map[wm.WorkerName]wm.WorkerConfig{
 			DummyWorkerA: new(wm.DummyConfig),
-			DummyWorkerB: new(wm.DummyConfig),
 		})
 		if err != nil {
 			return
 		}
 		for _, next := range nexts {
-			next(&dummyTarget{DummyTarget: wm.DummyTarget{TaskToken: target.Token()}, step: StepB})
+			for _, res := range results {
+				next(res)
+			}
 		}
 	}
 	dummyStepProcessor wm.StepProcessor = func(results ...wm.WorkTarget) ([]wm.WorkTarget, error) {
@@ -45,7 +48,8 @@ type dummyWorker struct {
 }
 
 func (w *dummyWorker) Work(target wm.WorkTarget) ([]wm.WorkTarget, error) {
-	return []wm.WorkTarget{target}, nil
+	_ = target.(*dummyTarget)
+	return []wm.WorkTarget{&dummyTarget{step: StepB}}, nil
 }
 func (w *dummyWorker) Finished() <-chan struct{} { return w.finish }
 
