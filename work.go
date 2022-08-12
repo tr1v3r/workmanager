@@ -51,11 +51,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 }
 
 func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res []WorkTarget, err error) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Error("work panic: %v\n%v", err, catchStack())
-		}
-	}()
+	defer catchPanic("work panic")
 
 	worker.BeforeWork()
 	res, err = worker.Work(arg)
