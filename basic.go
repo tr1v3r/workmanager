@@ -41,6 +41,7 @@ type WorkerConfig interface {
 // WorkTarget target/result
 type WorkTarget interface {
 	Token() string
+	SetToken(token string)
 	Key() string
 
 	Trans(step WorkStep) ([]WorkTarget, error)
