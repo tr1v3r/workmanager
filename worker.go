@@ -199,6 +199,6 @@ func (wm *WorkerManager) run(step WorkStep, runner func()) {
 
 func catchPanic(format string, args ...interface{}) {
 	if e := recover(); e != nil {
-		log.Error(format+": %v", append(args, e)...)
+		log.Error(format+": %v\n%v", append(args, e, catchStack())...)
 	}
 }
