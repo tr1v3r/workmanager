@@ -1,0 +1,33 @@
+run:
+  deadline: 30s
+  tests: false
+  skip-dirs-use-default: true
+  skip-dirs:
+    - testscripts
+    - scripts
+
+linters-settings:
+  gofmt:
+    simplify: true
+  govet:
+    check-shadowing: true
+  goimports:
+    local-prefixes: github.com/riverchu/workmanager
+  unused:
+    check-exported: false
+  revive:
+      min-confidence: 0.8
+
+linters:
+  presets:
+    - unused
+  enable:
+    - govet
+    - revive
+    - bodyclose
+    - errcheck
+    - exportloopref
+    - staticcheck
+
+issues:
+  exclude-use-default: false
