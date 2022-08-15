@@ -3,23 +3,17 @@ package workmanager_test
 import (
 	"context"
 	"fmt"
-	"testing"
 	"time"
 
 	wm "github.com/riverchu/workmanager"
 )
 
-func Example_NewInstance() {
+func ExampleWorkerManager_NewInstance() {
 	fmt.Println("hello world")
 	// Output: hello world
 }
 
-func Example_Singleton() {
-	fmt.Println("hello world")
-	// Output: hello world
-}
-
-func Test_Outline(t *testing.T) {
+func ExampleWorkerManager_Singleton() {
 	wm.RegisterWorker(DummyWorkerA, dummyBuilder)
 	wm.RegisterWorker(DummyWorkerB, dummyBuilder)
 
@@ -29,15 +23,22 @@ func Test_Outline(t *testing.T) {
 	wm.Serve()
 
 	task := wm.NewTask(context.Background())
+	task.(*wm.Task).TaskToken = "example_token_123"
 	wm.AddTask(task)
 
 	err := wm.Recv(StepA, &dummyTarget{DummyTarget: wm.DummyTarget{TaskToken: task.Token()}, step: StepA})
 	if err != nil {
-		t.Errorf("send target fail: %s", err)
+		fmt.Printf("send target fail: %s", err)
 	}
 
 	for c := time.Tick(100 * time.Millisecond); !task.IsFinished(); <-c {
 	}
 
-	t.Logf("task %+v", wm.GetTask(task.Token()))
+	resultTask := wm.GetTask(task.Token()).(*wm.Task)
+	fmt.Printf("got task: { token: %s, finished: %t }", resultTask.TaskToken, resultTask.Finished)
+
+	// Output:
+	// got result: &{DummyTarget:{TaskToken:example_token_123} step:step_b}
+	// got result: &{DummyTarget:{TaskToken:example_token_123} step:step_a}
+	// got task: { token: example_token_123, finished: true }
 }
