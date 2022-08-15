@@ -2,8 +2,6 @@ package workmanager
 
 import (
 	"context"
-
-	"github.com/riverchu/pkg/log"
 )
 
 // Work ...
@@ -26,10 +24,7 @@ func Register(
 	workers map[WorkerName]WorkerBuilder,
 	to ...WorkStep,
 ) {
-	for name, builder := range workers {
-		workerMgr.RegisterWorker(name, builder)
-	}
-	workerMgr.RegisterStep(from, runner, processor, to...)
+	defaultWorkerMgr.Register(from, runner, processor, workers, to...)
 }
 
 // RegisterWorker register worker
@@ -37,7 +32,7 @@ func RegisterWorker(
 	name WorkerName,
 	builder WorkerBuilder,
 ) {
-	workerMgr.RegisterWorker(name, builder)
+	defaultWorkerMgr.RegisterWorker(name, builder)
 }
 
 // RegisterStep register step runner and processor
@@ -47,30 +42,25 @@ func RegisterStep(
 	processor StepProcessor, // result processor
 	to ...WorkStep,
 ) {
-	workerMgr.RegisterStep(from, runner, processor, to...)
+	defaultWorkerMgr.RegisterStep(from, runner, processor, to...)
 }
 
-// Serve ...
-func Serve(steps ...WorkStep) { workerMgr.Serve(steps...) }
+// Serve daemon serve goroutine
+func Serve(steps ...WorkStep) { defaultWorkerMgr.Serve(steps...) }
 
 // Recv ...
-func Recv(step WorkStep, target WorkTarget) error {
-	log.Info("recv task, target is: %+v", target)
-	return workerMgr.Recv(step, target)
-}
+func Recv(step WorkStep, target WorkTarget) error { return defaultWorkerMgr.Recv(step, target) }
 
 // SetCacher set default work manager cacher
-func SetCacher(c Cacher) {
-	workerMgr.SetCacher(c)
-}
+func SetCacher(c Cacher) { defaultWorkerMgr.SetCacher(c) }
 
 // Task api
 
 // AddTask ...
-func AddTask(task WorkTask) { workerMgr.taskMgr.Add(task) }
+func AddTask(task WorkTask) { defaultWorkerMgr.AddTask(task) }
 
 // GetTask ...
-func GetTask(token string) WorkTask { return workerMgr.taskMgr.Get(token) }
+func GetTask(token string) WorkTask { return defaultWorkerMgr.GetTask(token) }
 
 // CancelTask ...
-func CancelTask(token string) error { return workerMgr.taskMgr.CancelTask(token) }
+func CancelTask(token string) error { return defaultWorkerMgr.CancelTask(token) }

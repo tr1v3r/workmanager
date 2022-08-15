@@ -46,7 +46,7 @@ func (t *taskManager) Done(taskToken string) {
 	t.Get(taskToken).Done()
 }
 
-func (t *taskManager) CancelTask(taskToken string) error {
+func (t *taskManager) Cancel(taskToken string) error {
 	t.Get(taskToken).Cancel()
 	return nil
 }

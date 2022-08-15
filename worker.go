@@ -3,6 +3,7 @@ package workmanager
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 
 	"golang.org/x/time/rate"
@@ -10,7 +11,7 @@ import (
 	"github.com/riverchu/pkg/log"
 )
 
-var workerMgr = NewWorkerManager(context.Background())
+var defaultWorkerMgr = NewWorkerManager(context.Background())
 
 // NewWorkerManager ...
 func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerManager) (mgr *WorkerManager) { // nolint
@@ -25,7 +26,7 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 		pipeMgr: NewPipeManager(ctx),
 		taskMgr: NewTaskManager(ctx),
 		poolMgr: NewPoolManager(ctx),
-		limiter: rate.NewLimiter(5, 100),
+		limiter: rate.NewLimiter(rate.Limit(runtime.NumCPU()*100), 100),
 
 		mu:               new(sync.RWMutex),
 		workerBuilders:   make(map[WorkerName]WorkerBuilder, 8),
@@ -76,6 +77,19 @@ func (wm *WorkerManager) RemoveStep(steps ...WorkStep) {
 }
 
 func (wm *WorkerManager) SetLimit(limit rate.Limit) { wm.limiter = rate.NewLimiter(limit, 100) }
+
+func (wm *WorkerManager) Register(
+	from WorkStep,
+	runner StepRunner,
+	processor StepProcessor,
+	workers map[WorkerName]WorkerBuilder,
+	to ...WorkStep,
+) {
+	for name, builder := range workers {
+		wm.RegisterWorker(name, builder)
+	}
+	wm.RegisterStep(from, runner, processor, to...)
+}
 
 func (wm *WorkerManager) RegisterWorker(
 	name WorkerName,
@@ -200,3 +214,14 @@ func (wm *WorkerManager) run(step WorkStep, runner func()) {
 		runner()
 	}()
 }
+
+// ==================== Task API ====================
+
+// AddTask add new task
+func (wm *WorkerManager) AddTask(task WorkTask) { wm.taskMgr.Add(task) }
+
+// GetTask get task object
+func (wm *WorkerManager) GetTask(token string) WorkTask { return wm.taskMgr.Get(token) }
+
+// CancelTask cancel task
+func (wm *WorkerManager) CancelTask(token string) error { return wm.taskMgr.Cancel(token) }
