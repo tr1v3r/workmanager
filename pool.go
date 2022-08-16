@@ -12,13 +12,12 @@ const flex = 1
 
 // NewPoolManager ...
 func NewPoolManager(_ context.Context, steps ...WorkStep) *poolManager { // nolint
-	sz := runtime.NumCPU() * flex
 	mgr := &poolManager{
-		size: sz,
+		size: runtime.NumCPU() * flex,
 		m:    make(map[WorkStep]pools.Pool),
 	}
 	for _, step := range steps {
-		mgr.m[step] = pools.NewPool(sz)
+		mgr.m[step] = pools.NewPool(mgr.size)
 	}
 	return mgr
 }
@@ -29,35 +28,44 @@ type poolManager struct {
 	m    map[WorkStep]pools.Pool
 }
 
-func (p *poolManager) ResizePool(size int, steps ...WorkStep) error {
-	for _, step := range steps {
-		pool := pools.NewPool(size)
-		p.mu.Lock()
-		p.m[step] = pool
-		p.mu.Unlock()
+// PoolSteps return all step has pool
+func (p *poolManager) PoolSteps() (steps []WorkStep) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	for step := range p.m {
+		steps = append(steps, step)
 	}
-	return nil
+	return
 }
 
-func (p *poolManager) Get(step WorkStep) pools.Pool {
+func (p *poolManager) GetPool(step WorkStep) pools.Pool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.m[step]
 }
 
-func (p *poolManager) Add(step WorkStep, size int) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if _, ok := p.m[step]; ok {
+func (p *poolManager) SetPool(size int, steps ...WorkStep) {
+	if len(steps) == 0 {
 		return
 	}
+
 	if size <= 0 {
 		size = runtime.NumCPU() * flex
 	}
-	p.m[step] = pools.NewPool(size)
+
+	poolArr := make([]pools.Pool, len(steps))
+	for i := range steps {
+		poolArr[i] = pools.NewPool(size)
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for i, step := range steps {
+		p.m[step] = poolArr[i]
+	}
 }
 
-func (p *poolManager) Remove(steps ...WorkStep) {
+func (p *poolManager) DelPool(steps ...WorkStep) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for _, step := range steps {
