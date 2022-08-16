@@ -23,7 +23,6 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 			continue
 		}
 
-		_ = wm.limiter.Wait(wm.ctx)
 		select {
 		case <-pool.AsyncWait():
 		case <-wm.ctx.Done():

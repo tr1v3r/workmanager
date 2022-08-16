@@ -3,7 +3,6 @@ package workmanager
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"sync"
 
 	"golang.org/x/time/rate"
@@ -23,10 +22,10 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 	return &WorkerManager{
 		ctx: ctx,
 
-		pipeMgr: NewPipeManager(ctx),
-		taskMgr: NewTaskManager(ctx),
-		poolMgr: NewPoolManager(ctx),
-		limiter: rate.NewLimiter(rate.Limit(runtime.NumCPU()*100), 100),
+		pipeMgr:  NewPipeManager(ctx),
+		taskMgr:  NewTaskManager(ctx),
+		poolMgr:  NewPoolManager(ctx),
+		limitMgr: NewLimitManager(ctx),
 
 		mu:               new(sync.RWMutex),
 		workerBuilders:   make(map[WorkerName]WorkerBuilder, 8),
@@ -40,10 +39,10 @@ type WorkerManager struct {
 
 	cacher Cacher
 
-	pipeMgr *pipeManager
-	taskMgr *taskManager
-	poolMgr *poolManager
-	limiter *rate.Limiter
+	pipeMgr  *pipeManager
+	taskMgr  *taskManager
+	poolMgr  *poolManager
+	limitMgr *limitManager
 
 	mu               *sync.RWMutex
 	workerBuilders   map[WorkerName]WorkerBuilder
@@ -67,16 +66,20 @@ func (wm *WorkerManager) StartStep(step WorkStep, opts ...StepOption) {
 }
 
 func (wm *WorkerManager) SetStep(step WorkStep, opts ...StepOption) {
-	wm.poolMgr.Add(step, 0)
+	wm.poolMgr.SetPool(0, step)
 	wm.pipeMgr.SetStep(step, opts...)
 }
 
 func (wm *WorkerManager) RemoveStep(steps ...WorkStep) {
 	wm.pipeMgr.Remove(steps...)
-	wm.poolMgr.Remove(steps...)
+	wm.poolMgr.DelPool(steps...)
 }
 
-func (wm *WorkerManager) SetLimit(limit rate.Limit) { wm.limiter = rate.NewLimiter(limit, 100) }
+func (wm *WorkerManager) SetLimit(limit rate.Limit, b int) { wm.limitMgr.SetDefaultLimiter(limit, b) }
+
+func (wm *WorkerManager) SetStepLimit(step WorkStep, r rate.Limit, b int) {
+	wm.limitMgr.SetLimiter(step, r, b)
+}
 
 func (wm *WorkerManager) Register(
 	from WorkStep,
@@ -111,7 +114,7 @@ func (wm *WorkerManager) RegisterStep(
 	wm.stepRunners[from] = func(wm *WorkerManager) error {
 		defer catchPanic("%s step runner panic", from)
 
-		for ch := wm.pipeMgr.GetReadChan(from); ch != nil; _ = wm.limiter.Wait(wm.ctx) {
+		for ch := wm.pipeMgr.GetReadChan(from); ch != nil; _ = wm.limitMgr.GetLimiter(from).Wait(wm.ctx) {
 			select {
 			case <-wm.ctx.Done():
 				log.Info("step %s runner stopped", from)
@@ -197,7 +200,7 @@ func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
 }
 
 func (wm *WorkerManager) run(step WorkStep, runner func()) {
-	pool := wm.poolMgr.Get(step)
+	pool := wm.poolMgr.GetPool(step)
 	if pool == nil {
 		log.Warn("step %s's pool not found, task will not run", step)
 		return
