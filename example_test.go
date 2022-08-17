@@ -8,7 +8,7 @@ import (
 	wm "github.com/riverchu/workmanager"
 )
 
-func ExampleWorkerManager_NewInstance() {
+func ExampleWorkerManager_newInstance() {
 	mgr := wm.NewWorkerManager(context.Background())
 
 	mgr.RegisterWorker(DummyWorkerA, dummyBuilder)
@@ -40,7 +40,7 @@ func ExampleWorkerManager_NewInstance() {
 	// got task: { token: example_token_123, finished: true }
 }
 
-func ExampleWorkerManager_Singleton() {
+func ExampleWorkerManager_singleton() {
 	wm.RegisterWorker(DummyWorkerA, dummyBuilder)
 	wm.RegisterWorker(DummyWorkerB, dummyBuilder)
 
