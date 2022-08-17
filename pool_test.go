@@ -2,7 +2,6 @@ package workmanager
 
 import (
 	"context"
-	"runtime"
 	"testing"
 	"time"
 )
@@ -17,24 +16,20 @@ func Test_poolManager(t *testing.T) {
 	poolMgr := NewPoolManager(context.Background(), poolStepA, poolStepB)
 
 	steps := poolMgr.PoolSteps()
-	if len(steps) != 2 || steps[0] != poolStepA || steps[1] != poolStepB {
+	if len(steps) != 2 || !ContainsStep(poolStepA, steps...) || !ContainsStep(poolStepB, steps...) {
 		t.Errorf("pool manager init fail: expect steps: %+v, got: %+v", []WorkStep{poolStepA, poolStepB}, steps)
 	}
 	t.Log("init ok")
 
-	size := runtime.NumCPU() * flex
-	if poolMgr.Size() != size || poolMgr.GetPool(poolStepA).Size() != size || poolMgr.GetPool(poolStepB).Size() != size {
-		t.Errorf("pool size error: expect %d, got: %d", size, poolMgr.Size())
+	if poolMgr.GetPool(poolStepA).Size() != defaultPoolSize || poolMgr.GetPool(poolStepB).Size() != defaultPoolSize {
+		t.Errorf("pool size error: expect %d, got: %d", defaultPoolSize, poolMgr.GetPool(poolStepA).Size())
 	}
 	t.Log("pool size ok")
 
 	newSize := 99
 	poolMgr.SetPool(newSize, poolStepA, poolStepC)
-	if poolMgr.Size() != size {
-		t.Errorf("pool size error: expect %d, got %d", newSize, poolMgr.Size())
-	}
 	if poolMgr.GetPool(poolStepA).Size() != newSize ||
-		poolMgr.GetPool(poolStepB).Size() != size ||
+		poolMgr.GetPool(poolStepB).Size() != defaultPoolSize ||
 		poolMgr.GetPool(poolStepC).Size() != newSize {
 		t.Errorf("set pool size fail: expect %d, got %s:%d\t%s:%d\t%s:%d",
 			newSize,

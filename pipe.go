@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+// TODO: accept web api and redis as sources
+
 const defaultChanSize = 256
 
 // NewPoolManager ...
@@ -21,8 +23,8 @@ type pipeManager struct {
 	chanMap map[WorkStep]chan WorkTarget
 }
 
-func (pm *pipeManager) GetReadChan(step WorkStep) <-chan WorkTarget  { return pm.getChan(step) }
-func (pm *pipeManager) GetWriteChan(step WorkStep) chan<- WorkTarget { return pm.getChan(step) }
+func (pm *pipeManager) GetRecvChan(step WorkStep) <-chan WorkTarget { return pm.getChan(step) }
+func (pm *pipeManager) GetSendChan(step WorkStep) chan<- WorkTarget { return pm.getChan(step) }
 
 func (pm *pipeManager) getChan(step WorkStep) chan WorkTarget {
 	pm.mu.RLock()
@@ -30,28 +32,26 @@ func (pm *pipeManager) getChan(step WorkStep) chan WorkTarget {
 	return pm.chanMap[step]
 }
 
-func (pm *pipeManager) GetReadChans(steps ...WorkStep) (chs []<-chan WorkTarget) {
+func (pm *pipeManager) GetRecvChans(steps ...WorkStep) (chs []<-chan WorkTarget) {
 	for _, step := range steps {
-		if ch := pm.GetReadChan(step); ch != nil {
+		if ch := pm.GetRecvChan(step); ch != nil {
 			chs = append(chs, ch)
 		}
 	}
 	return chs
 }
-func (pm *pipeManager) GetWriteChans(steps ...WorkStep) (chs []chan<- WorkTarget) {
+func (pm *pipeManager) GetSendChans(steps ...WorkStep) (chs []chan<- WorkTarget) {
 	for _, step := range steps {
-		if ch := pm.GetWriteChan(step); ch != nil {
+		if ch := pm.GetSendChan(step); ch != nil {
 			chs = append(chs, ch)
 		}
 	}
 	return chs
 }
 
-func (pm *pipeManager) Has(step WorkStep) bool {
-	return pm.getChan(step) != nil
-}
+func (pm *pipeManager) HasPipe(step WorkStep) bool { return pm.getChan(step) != nil }
 
-func (pm *pipeManager) SetStep(step WorkStep, opts ...StepOption) {
+func (pm *pipeManager) SetPipe(step WorkStep, opts ...StepOption) {
 	ch := make(chan WorkTarget, defaultChanSize)
 	for _, opt := range opts {
 		ch = opt(ch)
@@ -62,7 +62,7 @@ func (pm *pipeManager) SetStep(step WorkStep, opts ...StepOption) {
 	pm.chanMap[step] = ch
 }
 
-func (pm *pipeManager) Remove(steps ...WorkStep) {
+func (pm *pipeManager) RemovePipe(steps ...WorkStep) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	for _, step := range steps {

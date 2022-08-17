@@ -6,7 +6,7 @@ import (
 )
 
 func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error) {
-	task := wm.taskMgr.Get(target.Token())
+	task := wm.GetTask(target.Token())
 	if task == nil {
 		log.Warn("no such task token %s", target.Token())
 		return
@@ -17,7 +17,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 		return
 	}
 
-	pool := pools.NewPool(wm.poolMgr.Size() * 4)
+	pool := pools.NewPool(defaultPoolSize * 4)
 	for name, conf := range configs {
 		if !conf.Active() {
 			continue

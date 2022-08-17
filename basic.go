@@ -51,11 +51,11 @@ type WorkTarget interface {
 
 // WorkTask work task
 type WorkTask interface {
-	Start()
-	StartN(n int64)
-	Done()
+	Start() error
+	StartN(n int64) error
+	Done() error
 
-	Cancel()
+	Cancel() error
 
 	IsCanceled() bool
 	IsFinished() bool

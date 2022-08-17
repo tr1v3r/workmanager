@@ -10,22 +10,22 @@ import (
 
 const flex = 1
 
+var defaultPoolSize = runtime.NumCPU() * flex
+
 // NewPoolManager ...
 func NewPoolManager(_ context.Context, steps ...WorkStep) *poolManager { // nolint
 	mgr := &poolManager{
-		size: runtime.NumCPU() * flex,
-		m:    make(map[WorkStep]pools.Pool),
+		m: make(map[WorkStep]pools.Pool),
 	}
 	for _, step := range steps {
-		mgr.m[step] = pools.NewPool(mgr.size)
+		mgr.m[step] = pools.NewPool(defaultPoolSize)
 	}
 	return mgr
 }
 
 type poolManager struct {
-	size int
-	mu   sync.RWMutex
-	m    map[WorkStep]pools.Pool
+	mu sync.RWMutex
+	m  map[WorkStep]pools.Pool
 }
 
 // PoolSteps return all step has pool
@@ -72,6 +72,3 @@ func (p *poolManager) DelPool(steps ...WorkStep) {
 		delete(p.m, step)
 	}
 }
-
-// Size ...
-func (p *poolManager) Size() int { return p.size }

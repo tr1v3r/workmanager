@@ -8,10 +8,18 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func NewLimitManager(context.Context) *limitManager {
+const defaultBurst = 100
+const defaultStepLimit rate.Limit = 100
+
+func NewLimitManager(_ context.Context, steps ...WorkStep) (mgr *limitManager) {
+	defer func() {
+		for _, step := range steps {
+			mgr.limiterMap[step] = rate.NewLimiter(defaultStepLimit, defaultBurst)
+		}
+	}()
 	return &limitManager{
 		limiterMap:     make(map[WorkStep]*rate.Limiter),
-		defaultLimiter: rate.NewLimiter(rate.Limit(runtime.NumCPU()*100), 100),
+		defaultLimiter: rate.NewLimiter(rate.Limit(runtime.NumCPU())*defaultStepLimit, defaultBurst),
 	}
 }
 
@@ -48,10 +56,30 @@ func (l *limitManager) GetLimiter(step WorkStep) *rate.Limiter {
 	}
 }
 
-func (l *limitManager) SetLimiter(step WorkStep, r rate.Limit, b int) {
-	limiter := rate.NewLimiter(r, b)
-
+func (l *limitManager) SetLimiter(r rate.Limit, steps ...WorkStep) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.limiterMap[step] = limiter
+	for _, step := range steps {
+		if limiter, ok := l.limiterMap[step]; ok {
+			limiter.SetLimit(r)
+		} else {
+			l.limiterMap[step] = rate.NewLimiter(r, defaultBurst)
+		}
+	}
+}
+func (l *limitManager) DelLimiter(steps ...WorkStep) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for _, step := range steps {
+		delete(l.limiterMap, step)
+	}
+}
+
+func (l *limitManager) LimitSteps() (steps []WorkStep) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	for step := range l.limiterMap {
+		steps = append(steps, step)
+	}
+	return
 }

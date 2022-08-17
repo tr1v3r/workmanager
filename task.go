@@ -22,7 +22,7 @@ func NewTask(ctx context.Context) WorkTask {
 	}
 }
 
-// Task ...
+// Task work task
 type Task struct {
 	Ctx context.Context
 
@@ -39,32 +39,28 @@ type Task struct {
 	doneCount  int64
 }
 
-// Token ...
+// Token return task token
 func (t *Task) Token() string { return t.TaskToken }
 
-// Context ...
+// Context return context
 func (t *Task) Context() context.Context { return t.Ctx }
 
-// Start ...
-func (t *Task) Start() {
-	if t == nil {
-		return
-	}
-	atomic.AddInt64(&t.startCount, 1)
-}
+// Start task start
+func (t *Task) Start() error { return t.StartN(1) }
 
-// StartN ...
-func (t *Task) StartN(n int64) {
+// StartN task start n
+func (t *Task) StartN(n int64) error {
 	if t == nil {
-		return
+		return ErrNilTask
 	}
 	atomic.AddInt64(&t.startCount, n)
+	return nil
 } // nolint
 
-// Done ...
-func (t *Task) Done() {
+// Done task done count
+func (t *Task) Done() error {
 	if t == nil {
-		return
+		return ErrNilTask
 	}
 	defer atomic.AddInt64(&t.doneCount, 1)
 	if atomic.LoadInt64(&t.startCount) == atomic.LoadInt64(&t.doneCount)+1 {
@@ -74,30 +70,22 @@ func (t *Task) Done() {
 			t.FinishFunc()
 		}
 	}
+	return nil
 }
 
-// Cancel ...
-func (t *Task) Cancel() {
+// Cancel task cancel
+func (t *Task) Cancel() error {
 	if t == nil {
-		return
+		return ErrNilTask
 	}
 	if t.CancelFunc != nil {
 		t.CancelFunc()
 	}
+	return nil
 }
 
 // IsCanceled ...
-func (t *Task) IsCanceled() bool {
-	if t == nil {
-		return true
-	}
-	return errors.Is(t.Ctx.Err(), context.Canceled)
-}
+func (t *Task) IsCanceled() bool { return t == nil || errors.Is(t.Ctx.Err(), context.Canceled) }
 
 // IsFinished ...
-func (t *Task) IsFinished() bool {
-	if t == nil {
-		return true
-	}
-	return t.Finished
-}
+func (t *Task) IsFinished() bool { return t == nil || t.Finished }

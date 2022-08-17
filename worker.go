@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"golang.org/x/time/rate"
-
 	"github.com/riverchu/pkg/log"
 )
 
@@ -22,10 +20,10 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 	return &WorkerManager{
 		ctx: ctx,
 
-		pipeMgr:  NewPipeManager(ctx),
-		taskMgr:  NewTaskManager(ctx),
-		poolMgr:  NewPoolManager(ctx),
-		limitMgr: NewLimitManager(ctx),
+		taskManager:  NewTaskManager(ctx),
+		pipeManager:  NewPipeManager(ctx),
+		poolManager:  NewPoolManager(ctx),
+		limitManager: NewLimitManager(ctx),
 
 		mu:               new(sync.RWMutex),
 		workerBuilders:   make(map[WorkerName]WorkerBuilder, 8),
@@ -39,10 +37,10 @@ type WorkerManager struct {
 
 	cacher Cacher
 
-	pipeMgr  *pipeManager
-	taskMgr  *taskManager
-	poolMgr  *poolManager
-	limitMgr *limitManager
+	*taskManager
+	*pipeManager
+	*poolManager
+	*limitManager
 
 	mu               *sync.RWMutex
 	workerBuilders   map[WorkerName]WorkerBuilder
@@ -52,33 +50,27 @@ type WorkerManager struct {
 
 func (wm WorkerManager) WithContext(ctx context.Context) *WorkerManager {
 	wm.ctx = ctx
-	wm.taskMgr = wm.taskMgr.WithContext(ctx)
+	wm.taskManager = wm.taskManager.WithContext(ctx)
 	return &wm
 }
 
 func (wm *WorkerManager) SetCacher(c Cacher) { wm.cacher = c }
 
 func (wm *WorkerManager) StartStep(step WorkStep, opts ...StepOption) {
-	if wm.pipeMgr.Has(step) { // 存在则不需处理
+	if wm.HasPipe(step) { // 存在则不需处理
 		return
 	}
 	wm.SetStep(step, opts...)
 }
 
 func (wm *WorkerManager) SetStep(step WorkStep, opts ...StepOption) {
-	wm.poolMgr.SetPool(0, step)
-	wm.pipeMgr.SetStep(step, opts...)
+	wm.SetPool(0, step)
+	wm.SetPipe(step, opts...)
 }
 
 func (wm *WorkerManager) RemoveStep(steps ...WorkStep) {
-	wm.pipeMgr.Remove(steps...)
-	wm.poolMgr.DelPool(steps...)
-}
-
-func (wm *WorkerManager) SetLimit(limit rate.Limit, b int) { wm.limitMgr.SetDefaultLimiter(limit, b) }
-
-func (wm *WorkerManager) SetStepLimit(step WorkStep, r rate.Limit, b int) {
-	wm.limitMgr.SetLimiter(step, r, b)
+	wm.RemovePipe(steps...)
+	wm.DelPool(steps...)
 }
 
 func (wm *WorkerManager) Register(
@@ -114,7 +106,7 @@ func (wm *WorkerManager) RegisterStep(
 	wm.stepRunners[from] = func(wm *WorkerManager) error {
 		defer catchPanic("%s step runner panic", from)
 
-		for ch := wm.pipeMgr.GetReadChan(from); ch != nil; _ = wm.limitMgr.GetLimiter(from).Wait(wm.ctx) {
+		for ch := wm.GetRecvChan(from); ch != nil; _ = wm.GetLimiter(from).Wait(wm.ctx) {
 			select {
 			case <-wm.ctx.Done():
 				log.Info("step %s runner stopped", from)
@@ -123,7 +115,7 @@ func (wm *WorkerManager) RegisterStep(
 				wm.run(from, func() {
 					defer catchPanic("%s step work panic", from)
 
-					task := wm.taskMgr.Get(target.Token())
+					task := wm.GetTask(target.Token())
 					defer task.Done()
 					if wm.cacher != nil && !wm.cacher.Allow(target) {
 						return
@@ -131,7 +123,7 @@ func (wm *WorkerManager) RegisterStep(
 					runner(
 						wrapWork(wm.Work, wm.resultProcessors[from]),
 						target,
-						wrapChan(task.Start, wm.pipeMgr.GetWriteChans(to...))...,
+						wrapChan(task.Start, wm.GetSendChans(to...))...,
 					)
 				})
 			}
@@ -157,7 +149,7 @@ func wrapWork(work Work, processor StepProcessor) Work {
 	}
 }
 
-func wrapChan(start func(), chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
+func wrapChan(start func() error, chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
 	for _, ch := range chs {
 		ch := ch
 		recvs = append(recvs, func(target WorkTarget) {
@@ -187,12 +179,12 @@ func (wm *WorkerManager) Serve(steps ...WorkStep) {
 }
 
 func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
-	ch := wm.pipeMgr.GetWriteChan(step)
+	ch := wm.GetSendChan(step)
 	if ch == nil {
 		return fmt.Errorf("%s channel not found", step)
 	}
 
-	wm.taskMgr.Start(target.Token())
+	wm.TaskStart(target.Token())
 
 	ch <- target
 
@@ -200,7 +192,7 @@ func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
 }
 
 func (wm *WorkerManager) run(step WorkStep, runner func()) {
-	pool := wm.poolMgr.GetPool(step)
+	pool := wm.GetPool(step)
 	if pool == nil {
 		log.Warn("step %s's pool not found, task will not run", step)
 		return
@@ -217,14 +209,3 @@ func (wm *WorkerManager) run(step WorkStep, runner func()) {
 		runner()
 	}()
 }
-
-// ==================== Task API ====================
-
-// AddTask add new task
-func (wm *WorkerManager) AddTask(task WorkTask) { wm.taskMgr.Add(task) }
-
-// GetTask get task object
-func (wm *WorkerManager) GetTask(token string) WorkTask { return wm.taskMgr.Get(token) }
-
-// CancelTask cancel task
-func (wm *WorkerManager) CancelTask(token string) error { return wm.taskMgr.Cancel(token) }

@@ -26,31 +26,22 @@ func (t taskManager) WithContext(ctx context.Context) *taskManager {
 	return &t
 }
 
-func (t *taskManager) Add(task WorkTask) {
+func (t *taskManager) AddTask(task WorkTask) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.tokenMap[task.Token()] = task
 }
 
-func (t *taskManager) Get(taskToken string) WorkTask {
+func (t *taskManager) GetTask(taskToken string) WorkTask {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.tokenMap[taskToken]
 }
 
-func (t *taskManager) Start(taskToken string) {
-	t.Get(taskToken).Start()
-}
+func (t *taskManager) CancelTask(taskToken string) error { return t.GetTask(taskToken).Cancel() }
 
-func (t *taskManager) Done(taskToken string) {
-	t.Get(taskToken).Done()
-}
+func (t *taskManager) TaskStart(taskToken string) { t.GetTask(taskToken).Start() }
 
-func (t *taskManager) Cancel(taskToken string) error {
-	t.Get(taskToken).Cancel()
-	return nil
-}
+func (t *taskManager) TaskDone(taskToken string) { t.GetTask(taskToken).Done() }
 
-func (t *taskManager) IsCanceled(taskToken string) bool {
-	return t.Get(taskToken).IsCanceled()
-}
+func (t *taskManager) IsCanceled(taskToken string) bool { return t.GetTask(taskToken).IsCanceled() }
