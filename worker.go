@@ -56,20 +56,20 @@ func (wm WorkerManager) WithContext(ctx context.Context) *WorkerManager {
 
 func (wm *WorkerManager) SetCacher(c Cacher) { wm.cacher = c }
 
-func (wm *WorkerManager) StartStep(step WorkStep, opts ...StepOption) {
+func (wm *WorkerManager) StartStep(step WorkStep, opts ...PipeOption) {
 	if wm.HasPipe(step) { // 存在则不需处理
 		return
 	}
 	wm.SetStep(step, opts...)
 }
 
-func (wm *WorkerManager) SetStep(step WorkStep, opts ...StepOption) {
+func (wm *WorkerManager) SetStep(step WorkStep, opts ...PipeOption) {
 	wm.SetPool(0, step)
 	wm.SetPipe(step, opts...)
 }
 
 func (wm *WorkerManager) RemoveStep(steps ...WorkStep) {
-	wm.RemovePipe(steps...)
+	wm.DelPipe(steps...)
 	wm.DelPool(steps...)
 }
 

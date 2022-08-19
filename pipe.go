@@ -23,15 +23,6 @@ type pipeManager struct {
 	chanMap map[WorkStep]chan WorkTarget
 }
 
-func (pm *pipeManager) GetRecvChan(step WorkStep) <-chan WorkTarget { return pm.getChan(step) }
-func (pm *pipeManager) GetSendChan(step WorkStep) chan<- WorkTarget { return pm.getChan(step) }
-
-func (pm *pipeManager) getChan(step WorkStep) chan WorkTarget {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-	return pm.chanMap[step]
-}
-
 func (pm *pipeManager) GetRecvChans(steps ...WorkStep) (chs []<-chan WorkTarget) {
 	for _, step := range steps {
 		if ch := pm.GetRecvChan(step); ch != nil {
@@ -48,10 +39,16 @@ func (pm *pipeManager) GetSendChans(steps ...WorkStep) (chs []chan<- WorkTarget)
 	}
 	return chs
 }
+func (pm *pipeManager) GetRecvChan(step WorkStep) <-chan WorkTarget { return pm.getChan(step) }
+func (pm *pipeManager) GetSendChan(step WorkStep) chan<- WorkTarget { return pm.getChan(step) }
+func (pm *pipeManager) getChan(step WorkStep) chan WorkTarget {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+	return pm.chanMap[step]
+}
 
 func (pm *pipeManager) HasPipe(step WorkStep) bool { return pm.getChan(step) != nil }
-
-func (pm *pipeManager) SetPipe(step WorkStep, opts ...StepOption) {
+func (pm *pipeManager) SetPipe(step WorkStep, opts ...PipeOption) {
 	ch := make(chan WorkTarget, defaultChanSize)
 	for _, opt := range opts {
 		ch = opt(ch)
@@ -61,8 +58,7 @@ func (pm *pipeManager) SetPipe(step WorkStep, opts ...StepOption) {
 	defer pm.mu.Unlock()
 	pm.chanMap[step] = ch
 }
-
-func (pm *pipeManager) RemovePipe(steps ...WorkStep) {
+func (pm *pipeManager) DelPipe(steps ...WorkStep) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	for _, step := range steps {
