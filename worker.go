@@ -73,6 +73,15 @@ func (wm *WorkerManager) RemoveStep(steps ...WorkStep) {
 	wm.DelPool(steps...)
 }
 
+func (wm *WorkerManager) ListSteps() (steps []WorkStep) {
+	wm.mu.RLock()
+	defer wm.mu.RUnlock()
+	for step := range wm.stepRunners {
+		steps = append(steps, step)
+	}
+	return steps
+}
+
 func (wm *WorkerManager) Register(
 	from WorkStep,
 	runner StepRunner,

@@ -15,7 +15,7 @@ const (
 func Test_poolManager(t *testing.T) {
 	poolMgr := NewPoolManager(context.Background(), poolStepA, poolStepB)
 
-	steps := poolMgr.PoolSteps()
+	steps := poolMgr.poolSteps()
 	if len(steps) != 2 || !ContainsStep(poolStepA, steps...) || !ContainsStep(poolStepB, steps...) {
 		t.Errorf("pool manager init fail: expect steps: %+v, got: %+v", []WorkStep{poolStepA, poolStepB}, steps)
 	}
@@ -67,7 +67,7 @@ func Test_poolManager(t *testing.T) {
 
 	poolMgr.DelPool(poolStepA)
 	if poolMgr.GetPool(poolStepA) != nil {
-		t.Errorf("delete step fail: delete poolStepA, got: %+v", poolMgr.PoolSteps())
+		t.Errorf("delete step fail: delete poolStepA, got: %+v", poolMgr.poolSteps())
 	}
 	t.Log("delete pool ok")
 }

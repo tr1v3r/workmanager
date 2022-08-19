@@ -28,8 +28,8 @@ type poolManager struct {
 	m  map[WorkStep]pools.Pool
 }
 
-// PoolSteps return all step has pool
-func (p *poolManager) PoolSteps() (steps []WorkStep) {
+// poolSteps return all step has pool
+func (p *poolManager) poolSteps() (steps []WorkStep) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	for step := range p.m {

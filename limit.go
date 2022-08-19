@@ -75,7 +75,7 @@ func (l *limitManager) DelLimiter(steps ...WorkStep) {
 	}
 }
 
-func (l *limitManager) LimitSteps() (steps []WorkStep) {
+func (l *limitManager) limitSteps() (steps []WorkStep) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	for step := range l.limiterMap {

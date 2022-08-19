@@ -17,7 +17,7 @@ const (
 func Test_limitManager(t *testing.T) {
 	limitMgr := NewLimitManager(context.Background(), limitStepA, limitStepB)
 
-	steps := limitMgr.LimitSteps()
+	steps := limitMgr.limitSteps()
 	if len(steps) != 2 || !ContainsStep(limitStepA, steps...) || !ContainsStep(limitStepB, steps...) {
 		t.Errorf("limit manager init fail: expect steps: %+v, got: %+v", []WorkStep{limitStepA, limitStepB}, steps)
 	}
@@ -66,7 +66,7 @@ func Test_limitManager(t *testing.T) {
 
 	limitMgr.DelLimiter(limitStepA)
 	if limitMgr.GetLimiter(limitStepA) != limitMgr.defaultLimiter {
-		t.Errorf("delete step fail: delete limitStepA, got: %+v", limitMgr.LimitSteps())
+		t.Errorf("delete step fail: delete limitStepA, got: %+v", limitMgr.limitSteps())
 	}
 	t.Log("delete limiter ok")
 }
