@@ -18,6 +18,8 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 	}
 
 	pool := pools.NewPool(defaultPoolSize * 4)
+	defer pool.WaitAll()
+
 	for name, conf := range configs {
 		if !conf.Active() {
 			continue
@@ -44,7 +46,6 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 			results = append(results, res...)
 		}(name, conf)
 	}
-	pool.WaitAll()
 
 	return
 }
