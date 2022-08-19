@@ -72,3 +72,9 @@ func (p *poolManager) DelPool(steps ...WorkStep) {
 		delete(p.m, step)
 	}
 }
+
+func (p *poolManager) PoolStatus(step WorkStep) (num, size int) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.m[step].Num(), p.m[step].Size()
+}
