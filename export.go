@@ -4,17 +4,19 @@ import (
 	"context"
 )
 
-// Work ...
-type Work func(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error)
+type (
+	// Work ...
+	Work func(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error)
 
-// WorkerBuilder ...
-type WorkerBuilder func(ctx context.Context, workerName WorkerName, args map[string]interface{}) Worker
+	// WorkerBuilder ...
+	WorkerBuilder func(ctx context.Context, workerName WorkerName, args map[string]interface{}) Worker
 
-// StepRunner ...
-type StepRunner func(work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
+	// StepRunner ...
+	StepRunner func(work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
 
-// StepProcessor ...
-type StepProcessor func(results ...WorkTarget) ([]WorkTarget, error)
+	// StepProcessor ...
+	StepProcessor func(results ...WorkTarget) ([]WorkTarget, error)
+)
 
 // Register register worker and step runner/processor
 func Register(
