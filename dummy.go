@@ -26,9 +26,7 @@ func (c *DummyWorker) Finished() <-chan struct{}             { return nil }
 func (c *DummyWorker) Terminate() error                      { return nil }
 
 // DummyTarget dummy target
-type DummyTarget struct {
-	TaskToken string
-}
+type DummyTarget struct{ TaskToken string }
 
 func (t *DummyTarget) Token() string                             { return t.TaskToken }
 func (t *DummyTarget) SetToken(token string)                     { t.TaskToken = token }
