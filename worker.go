@@ -169,6 +169,25 @@ func wrapChan(start func() error, chs []chan<- WorkTarget) (recvs []func(WorkTar
 	return recvs
 }
 
+func (wm *WorkerManager) run(step WorkStep, runner func()) {
+	pool := wm.GetPool(step)
+	if pool == nil {
+		log.Warn("step %s's pool not found, task will not run", step)
+		return
+	}
+
+	select {
+	case <-pool.AsyncWait():
+	case <-wm.ctx.Done():
+		return
+	}
+
+	go func() {
+		defer pool.Done()
+		runner()
+	}()
+}
+
 func (wm *WorkerManager) Serve(steps ...WorkStep) {
 	log.Info("starting worker routine...")
 
@@ -200,21 +219,19 @@ func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
 	return nil
 }
 
-func (wm *WorkerManager) run(step WorkStep, runner func()) {
-	pool := wm.GetPool(step)
-	if pool == nil {
-		log.Warn("step %s's pool not found, task will not run", step)
-		return
-	}
-
-	select {
-	case <-pool.AsyncWait():
-	case <-wm.ctx.Done():
-		return
-	}
-
+func (wm *WorkerManager) RecvFrom(step WorkStep, recv <-chan WorkTarget) error {
 	go func() {
-		defer pool.Done()
-		runner()
+		for {
+			select {
+			case <-wm.ctx.Done():
+				return
+			case target, ok := <-recv:
+				if !ok {
+					return
+				}
+				wm.Recv(step, target)
+			}
+		}
 	}()
+	return nil
 }

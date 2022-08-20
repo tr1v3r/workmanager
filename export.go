@@ -60,6 +60,11 @@ func Serve(steps ...WorkStep) { defaultWorkerMgr.Serve(steps...) }
 // Recv ...
 func Recv(step WorkStep, target WorkTarget) error { return defaultWorkerMgr.Recv(step, target) }
 
+// RecvFrom recv from chan
+func RecvFrom(step WorkStep, recv <-chan WorkTarget) error {
+	return defaultWorkerMgr.RecvFrom(step, recv)
+}
+
 // SetCacher set default work manager cacher
 func SetCacher(c Cacher) { defaultWorkerMgr.SetCacher(c) }
 
