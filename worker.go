@@ -212,7 +212,9 @@ func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
 		return fmt.Errorf("%s channel not found", step)
 	}
 
-	wm.TaskStart(target.Token())
+	if err := wm.TaskStart(target.Token()); err != nil {
+		return fmt.Errorf("start task fail: %w", err)
+	}
 
 	ch <- target
 
