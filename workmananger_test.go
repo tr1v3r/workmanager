@@ -48,16 +48,11 @@ var (
 		}
 
 		for _, res := range results {
+			fmt.Printf("got result: %+v\n", res)
 			for _, next := range nexts {
 				next(res)
 			}
 		}
-	}
-	DummyStepProcessor StepProcessor = func(results ...WorkTarget) ([]WorkTarget, error) {
-		for _, result := range results {
-			fmt.Printf("got result: %+v\n", result)
-		}
-		return results, nil
 	}
 )
 

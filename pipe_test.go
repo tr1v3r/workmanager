@@ -13,10 +13,10 @@ func TestPipeManager_recver(t *testing.T) {
 	mgr.RegisterWorker(DummyWorkerA, DummyBuilder)
 	mgr.RegisterWorker(DummyWorkerB, DummyBuilder)
 
-	mgr.RegisterStep(StepA, DummyStepRunner, DummyStepProcessor, StepB)
+	mgr.RegisterStep(StepA, DummyStepRunner, StepB)
 	mgr.RegisterStep(StepB, TransRunner(func(target WorkTarget) {
 		fmt.Printf("%s got target %+v, transfering...", StepB, target)
-	}), nil)
+	}))
 
 	mgr.Serve()
 

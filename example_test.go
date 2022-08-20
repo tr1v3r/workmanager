@@ -14,8 +14,8 @@ func ExampleWorkerManager_newInstance() {
 	mgr.RegisterWorker(wm.DummyWorkerA, wm.DummyBuilder)
 	mgr.RegisterWorker(wm.DummyWorkerB, wm.DummyBuilder)
 
-	mgr.RegisterStep(wm.StepA, wm.DummyStepRunner, wm.DummyStepProcessor, wm.StepB)
-	mgr.RegisterStep(wm.StepB, wm.DummyStepRunner, wm.DummyStepProcessor)
+	mgr.RegisterStep(wm.StepA, wm.DummyStepRunner, wm.StepB)
+	mgr.RegisterStep(wm.StepB, wm.DummyStepRunner)
 
 	mgr.Serve()
 
@@ -44,8 +44,8 @@ func ExampleWorkerManager_singleton() {
 	wm.RegisterWorker(wm.DummyWorkerA, wm.DummyBuilder)
 	wm.RegisterWorker(wm.DummyWorkerB, wm.DummyBuilder)
 
-	wm.RegisterStep(wm.StepA, wm.DummyStepRunner, wm.DummyStepProcessor, wm.StepB)
-	wm.RegisterStep(wm.StepB, wm.DummyStepRunner, wm.DummyStepProcessor)
+	wm.RegisterStep(wm.StepA, wm.DummyStepRunner, wm.StepB)
+	wm.RegisterStep(wm.StepB, wm.DummyStepRunner)
 
 	wm.Serve()
 
