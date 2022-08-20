@@ -25,10 +25,9 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 		poolManager:  NewPoolManager(ctx),
 		limitManager: NewLimitManager(ctx),
 
-		mu:               new(sync.RWMutex),
-		workerBuilders:   make(map[WorkerName]WorkerBuilder, 8),
-		stepRunners:      make(map[WorkStep]func(*WorkerManager) error, 8),
-		resultProcessors: make(map[WorkStep]StepProcessor, 8),
+		mu:             new(sync.RWMutex),
+		workerBuilders: make(map[WorkerName]WorkerBuilder, 8),
+		stepRunners:    make(map[WorkStep]func(*WorkerManager) error, 8),
 	}
 }
 
@@ -42,10 +41,9 @@ type WorkerManager struct {
 	*poolManager
 	*limitManager
 
-	mu               *sync.RWMutex
-	workerBuilders   map[WorkerName]WorkerBuilder
-	stepRunners      map[WorkStep]func(*WorkerManager) error
-	resultProcessors map[WorkStep]StepProcessor
+	mu             *sync.RWMutex
+	workerBuilders map[WorkerName]WorkerBuilder
+	stepRunners    map[WorkStep]func(*WorkerManager) error
 }
 
 func (wm WorkerManager) WithContext(ctx context.Context) *WorkerManager {
@@ -85,14 +83,13 @@ func (wm *WorkerManager) ListSteps() (steps []WorkStep) {
 func (wm *WorkerManager) Register(
 	from WorkStep,
 	runner StepRunner,
-	processor StepProcessor,
 	workers map[WorkerName]WorkerBuilder,
 	to ...WorkStep,
 ) {
 	for name, builder := range workers {
 		wm.RegisterWorker(name, builder)
 	}
-	wm.RegisterStep(from, runner, processor, to...)
+	wm.RegisterStep(from, runner, to...)
 }
 
 func (wm *WorkerManager) RegisterWorker(
@@ -107,7 +104,6 @@ func (wm *WorkerManager) RegisterWorker(
 func (wm *WorkerManager) RegisterStep(
 	from WorkStep,
 	runner StepRunner,
-	processor StepProcessor,
 	to ...WorkStep,
 ) {
 	wm.mu.Lock()
@@ -130,7 +126,7 @@ func (wm *WorkerManager) RegisterStep(
 						return
 					}
 					runner(
-						wrapWork(wm.Work, wm.resultProcessors[from]),
+						wrapWork(wm.Work),
 						target,
 						wrapChan(task.Start, wm.GetSendChans(to...))...,
 					)
@@ -139,10 +135,9 @@ func (wm *WorkerManager) RegisterStep(
 		}
 		return nil
 	}
-	wm.resultProcessors[from] = processor
 }
 
-func wrapWork(work Work, processor StepProcessor) Work {
+func wrapWork(work Work) Work {
 	return func(target WorkTarget, configs map[WorkerName]WorkerConfig) ([]WorkTarget, error) {
 		results, err := work(target, configs)
 		if err != nil {
@@ -151,10 +146,7 @@ func wrapWork(work Work, processor StepProcessor) Work {
 		for _, res := range results {
 			res.SetToken(target.Token())
 		}
-		if processor == nil {
-			return results, nil
-		}
-		return processor(results...)
+		return results, nil
 	}
 }
 

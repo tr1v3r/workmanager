@@ -13,9 +13,6 @@ type (
 
 	// StepRunner ...
 	StepRunner func(work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
-
-	// StepProcessor ...
-	StepProcessor func(results ...WorkTarget) ([]WorkTarget, error)
 )
 
 var (
@@ -29,29 +26,20 @@ var (
 func Register(
 	from WorkStep,
 	runner StepRunner,
-	processor StepProcessor,
 	workers map[WorkerName]WorkerBuilder,
 	to ...WorkStep,
 ) {
-	defaultWorkerMgr.Register(from, runner, processor, workers, to...)
+	defaultWorkerMgr.Register(from, runner, workers, to...)
 }
 
 // RegisterWorker register worker
-func RegisterWorker(
-	name WorkerName,
-	builder WorkerBuilder,
-) {
+func RegisterWorker(name WorkerName, builder WorkerBuilder) {
 	defaultWorkerMgr.RegisterWorker(name, builder)
 }
 
 // RegisterStep register step runner and processor
-func RegisterStep(
-	from WorkStep,
-	runner StepRunner, // step runner
-	processor StepProcessor, // result processor
-	to ...WorkStep,
-) {
-	defaultWorkerMgr.RegisterStep(from, runner, processor, to...)
+func RegisterStep(from WorkStep, runner StepRunner, to ...WorkStep) {
+	defaultWorkerMgr.RegisterStep(from, runner, to...)
 }
 
 // Serve daemon serve goroutine
