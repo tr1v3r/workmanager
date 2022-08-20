@@ -2,6 +2,7 @@ package workmanager
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -12,12 +13,10 @@ func TestPipeManager_recver(t *testing.T) {
 	mgr.RegisterWorker(DummyWorkerA, DummyBuilder)
 	mgr.RegisterWorker(DummyWorkerB, DummyBuilder)
 
-	var endGame bool
 	mgr.RegisterStep(StepA, DummyStepRunner, DummyStepProcessor, StepB)
-	mgr.RegisterStep(StepB, func(_ Work, target WorkTarget, _ ...func(WorkTarget)) {
-		t.Logf("%s got target %+v, transfering...", StepB, target)
-		endGame = true
-	}, nil)
+	mgr.RegisterStep(StepB, TransRunner(func(target WorkTarget) {
+		fmt.Printf("%s got target %+v, transfering...", StepB, target)
+	}), nil)
 
 	mgr.Serve()
 
@@ -30,7 +29,7 @@ func TestPipeManager_recver(t *testing.T) {
 		t.Logf("send target fail: %s\n", err)
 	}
 
-	for c := time.Tick(100 * time.Millisecond); !endGame; <-c {
+	for c := time.Tick(100 * time.Millisecond); !task.IsFinished(); <-c {
 		t.Logf("task: %+v\n", task)
 	}
 
