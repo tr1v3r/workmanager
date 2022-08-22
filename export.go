@@ -13,6 +13,9 @@ type (
 
 	// StepRunner ...
 	StepRunner func(work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
+
+	// StepCallback ...
+	StepCallback func(...WorkTarget) []WorkTarget
 )
 
 // Register register worker and step runner/processor
@@ -33,6 +36,16 @@ func RegisterWorker(name WorkerName, builder WorkerBuilder) {
 // RegisterStep register step runner and processor
 func RegisterStep(from WorkStep, runner StepRunner, to ...WorkStep) {
 	defaultWorkerMgr.RegisterStep(from, runner, to...)
+}
+
+// RegisterBeforeCallbacks ...
+func RegisterBeforeCallbacks(step WorkStep, callbacks ...StepCallback) {
+	defaultWorkerMgr.RegisterBeforeCallbacks(step, callbacks...)
+}
+
+// RegisterAfterCallbacks ...
+func RegisterAfterCallbacks(step WorkStep, callbacks ...StepCallback) {
+	defaultWorkerMgr.RegisterAfterCallbacks(step, callbacks...)
 }
 
 // Serve daemon serve goroutine

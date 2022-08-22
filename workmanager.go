@@ -20,10 +20,11 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 	return &WorkerManager{
 		ctx: ctx,
 
-		taskManager:  NewTaskManager(ctx),
-		pipeManager:  NewPipeManager(ctx),
-		poolManager:  NewPoolManager(ctx),
-		limitManager: NewLimitManager(ctx),
+		taskManager:     NewTaskManager(ctx),
+		pipeManager:     NewPipeManager(ctx),
+		poolManager:     NewPoolManager(ctx),
+		limitManager:    NewLimitManager(ctx),
+		callbackManager: newCallbackManager(),
 
 		mu:             new(sync.RWMutex),
 		workerBuilders: make(map[WorkerName]WorkerBuilder, 8),
@@ -40,6 +41,7 @@ type WorkerManager struct {
 	*pipeManager
 	*poolManager
 	*limitManager
+	*callbackManager
 
 	mu             *sync.RWMutex
 	workerBuilders map[WorkerName]WorkerBuilder
@@ -125,8 +127,11 @@ func (wm *WorkerManager) RegisterStep(
 					if wm.cacher != nil && !wm.cacher.Allow(target) {
 						return
 					}
+
+					callbacks := wm.GetCallbacks(from)
+
 					runner(
-						wrapWork(wm.Work),
+						wrapWork(callbacks.BeforeWork(), wm.Work, callbacks.AfterWork()),
 						target,
 						wrapChan(task.Start, wm.GetSendChans(to...))...,
 					)
@@ -137,11 +142,21 @@ func (wm *WorkerManager) RegisterStep(
 	}
 }
 
-func wrapWork(work Work) Work {
+func wrapWork(before []StepCallback, work Work, after []StepCallback) Work {
 	return func(target WorkTarget, configs map[WorkerName]WorkerConfig) ([]WorkTarget, error) {
+		for _, call := range before {
+			if results := call(target); len(results) > 0 {
+				target = results[0]
+			} else {
+				target = nil
+			}
+		}
 		results, err := work(target, configs)
 		if err != nil {
 			return nil, err
+		}
+		for _, call := range after {
+			results = call(results...)
 		}
 		for _, res := range results {
 			res.SetToken(target.Token())
@@ -178,6 +193,14 @@ func (wm *WorkerManager) run(step WorkStep, runner func()) {
 		defer pool.Done()
 		runner()
 	}()
+}
+
+// ============ callbacks ============
+func (wm *WorkerManager) RegisterBeforeCallbacks(step WorkStep, callbacks ...StepCallback) {
+	wm.GetCallbacks(step).RegisterBefore(callbacks...)
+}
+func (wm *WorkerManager) RegisterAfterCallbacks(step WorkStep, callbacks ...StepCallback) {
+	wm.GetCallbacks(step).RegisterAfter(callbacks...)
 }
 
 func (wm *WorkerManager) Serve(steps ...WorkStep) {

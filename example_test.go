@@ -17,6 +17,15 @@ func ExampleWorkerManager_newInstance() {
 	mgr.RegisterStep(wm.StepA, wm.DummyStepRunner, wm.StepB)
 	mgr.RegisterStep(wm.StepB, wm.DummyStepRunner)
 
+	mgr.RegisterBeforeCallbacks(wm.StepA, func(t ...wm.WorkTarget) []wm.WorkTarget {
+		fmt.Printf("step %s before callback got target: %+v\n", wm.StepA, t[0])
+		return t
+	})
+	mgr.RegisterAfterCallbacks(wm.StepA, func(t ...wm.WorkTarget) []wm.WorkTarget {
+		fmt.Printf("step %s after callback got target: %+v\n", wm.StepA, t[0])
+		return t
+	})
+
 	mgr.Serve()
 
 	task := wm.NewTask(context.Background())
@@ -35,6 +44,8 @@ func ExampleWorkerManager_newInstance() {
 	fmt.Printf("got task: { token: %s, finished: %t }", resultTask.TaskToken, resultTask.Finished)
 
 	// Output:
+	// step step_a before callback got target: &{DummyTarget:{TaskToken:example_token_123} Step:step_a}
+	// step step_a after callback got target: &{DummyTarget:{TaskToken:} Step:step_b}
 	// got result: &{DummyTarget:{TaskToken:example_token_123} Step:step_b}
 	// got result: &{DummyTarget:{TaskToken:example_token_123} Step:step_a}
 	// got task: { token: example_token_123, finished: true }
@@ -46,6 +57,15 @@ func ExampleWorkerManager_singleton() {
 
 	wm.RegisterStep(wm.StepA, wm.DummyStepRunner, wm.StepB)
 	wm.RegisterStep(wm.StepB, wm.DummyStepRunner)
+
+	wm.RegisterBeforeCallbacks(wm.StepA, func(t ...wm.WorkTarget) []wm.WorkTarget {
+		fmt.Printf("step %s before callback got target: %+v\n", wm.StepA, t[0])
+		return t
+	})
+	wm.RegisterAfterCallbacks(wm.StepA, func(t ...wm.WorkTarget) []wm.WorkTarget {
+		fmt.Printf("step %s after callback got target: %+v\n", wm.StepA, t[0])
+		return t
+	})
 
 	wm.Serve()
 
@@ -65,6 +85,8 @@ func ExampleWorkerManager_singleton() {
 	fmt.Printf("got task: { token: %s, finished: %t }", resultTask.TaskToken, resultTask.Finished)
 
 	// Output:
+	// step step_a before callback got target: &{DummyTarget:{TaskToken:example_token_123} Step:step_a}
+	// step step_a after callback got target: &{DummyTarget:{TaskToken:} Step:step_b}
 	// got result: &{DummyTarget:{TaskToken:example_token_123} Step:step_b}
 	// got result: &{DummyTarget:{TaskToken:example_token_123} Step:step_a}
 	// got task: { token: example_token_123, finished: true }
