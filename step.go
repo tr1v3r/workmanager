@@ -3,8 +3,8 @@ package workmanager
 // PipeOption ...
 type PipeOption func(chan WorkTarget) chan WorkTarget
 
-// StepChSize ...
-var StepChSize = func(size int) PipeOption {
+// PipeChSize ...
+var PipeChSize = func(size int) PipeOption {
 	return func(ch chan WorkTarget) chan WorkTarget {
 		if size < 0 {
 			return ch
@@ -13,15 +13,9 @@ var StepChSize = func(size int) PipeOption {
 	}
 }
 
-// StepRecver ...
-var StepRecver = func(recv func(WorkTarget)) PipeOption {
-	return func(ch chan WorkTarget) chan WorkTarget {
-		go func() {
-			select {
-			case target := <-ch:
-				recv(target)
-			}
-		}()
-		return ch
+var (
+	// TransRunner runner for transfering
+	TransRunner = func(trans func(WorkTarget)) StepRunner {
+		return func(_ Work, target WorkTarget, _ ...func(WorkTarget)) { trans(target) }
 	}
-}
+)

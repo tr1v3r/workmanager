@@ -15,13 +15,6 @@ type (
 	StepRunner func(work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
 )
 
-var (
-	// TransRunner runner for transfering
-	TransRunner = func(trans func(WorkTarget)) StepRunner {
-		return func(_ Work, target WorkTarget, _ ...func(WorkTarget)) { trans(target) }
-	}
-)
-
 // Register register worker and step runner/processor
 func Register(
 	from WorkStep,
