@@ -155,11 +155,11 @@ func wrapWork(before []StepCallback, work Work, after []StepCallback) Work {
 		if err != nil {
 			return nil, err
 		}
-		for _, call := range after {
-			results = call(results...)
-		}
 		for _, res := range results {
 			res.SetToken(target.Token())
+		}
+		for _, call := range after {
+			results = call(results...)
 		}
 		return results, nil
 	}
