@@ -45,7 +45,7 @@ func ExampleWorkerManager_newInstance() {
 
 	// Output:
 	// step step_a before callback got target: &{DummyTarget:{TaskToken:example_token_123} Step:step_a}
-	// step step_a after callback got target: &{DummyTarget:{TaskToken:} Step:step_b}
+	// step step_a after callback got target: &{DummyTarget:{TaskToken:example_token_123} Step:step_b}
 	// got result: &{DummyTarget:{TaskToken:example_token_123} Step:step_b}
 	// got result: &{DummyTarget:{TaskToken:example_token_123} Step:step_a}
 	// got task: { token: example_token_123, finished: true }
@@ -86,7 +86,7 @@ func ExampleWorkerManager_singleton() {
 
 	// Output:
 	// step step_a before callback got target: &{DummyTarget:{TaskToken:example_token_123} Step:step_a}
-	// step step_a after callback got target: &{DummyTarget:{TaskToken:} Step:step_b}
+	// step step_a after callback got target: &{DummyTarget:{TaskToken:example_token_123} Step:step_b}
 	// got result: &{DummyTarget:{TaskToken:example_token_123} Step:step_b}
 	// got result: &{DummyTarget:{TaskToken:example_token_123} Step:step_a}
 	// got task: { token: example_token_123, finished: true }
