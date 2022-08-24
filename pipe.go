@@ -5,9 +5,20 @@ import (
 	"sync"
 )
 
-// TODO: accept web api and redis as sources
-
 const defaultChanSize = 256
+
+// PipeOption ...
+type PipeOption func(chan WorkTarget) chan WorkTarget
+
+// PipeChSize ...
+var PipeChSize = func(size int) PipeOption {
+	return func(ch chan WorkTarget) chan WorkTarget {
+		if size < 0 {
+			return ch
+		}
+		return make(chan WorkTarget, size)
+	}
+}
 
 // NewPoolManager ...
 func NewPipeManager(_ context.Context, steps ...WorkStep) *pipeManager { // nolint
