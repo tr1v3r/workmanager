@@ -33,7 +33,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 		go func(name WorkerName, c WorkerConfig) {
 			defer pool.Done()
 
-			worker := wm.workerBuilders[name](task.Context(), name, c.Args())
+			worker := wm.workerBuilders[name](task.Context(), c.Args())
 
 			res, err := wm.work(worker, target)
 			if err != nil {

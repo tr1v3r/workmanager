@@ -9,7 +9,7 @@ type (
 	Work func(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error)
 
 	// WorkerBuilder ...
-	WorkerBuilder func(ctx context.Context, workerName WorkerName, args map[string]interface{}) Worker
+	WorkerBuilder func(ctx context.Context, args map[string]interface{}) Worker
 
 	// StepRunner ...
 	StepRunner func(work Work, workTarget WorkTarget, nexts ...func(WorkTarget))

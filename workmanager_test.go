@@ -27,9 +27,19 @@ const (
 )
 
 var (
-	DummyBuilder WorkerBuilder = func(_ context.Context, name WorkerName, _ map[string]interface{}) Worker {
+	count = 0
+
+	DummyBuilder WorkerBuilder = func(_ context.Context, _ map[string]interface{}) Worker {
 		f := make(chan struct{}, 1)
 		close(f)
+		var name WorkerName
+		switch count {
+		case 0:
+			name = DummyWorkerA
+		case 1:
+			name = DummyWorkerB
+		}
+		count++
 		return &DummyTestWorker{Name: name, Finish: f}
 	}
 	DummyStepRunner StepRunner = func(work Work, target WorkTarget, nexts ...func(WorkTarget)) {
