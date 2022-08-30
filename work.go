@@ -1,6 +1,8 @@
 package workmanager
 
 import (
+	"sync"
+
 	"github.com/riverchu/pkg/log"
 	"github.com/riverchu/pkg/pools"
 )
@@ -17,6 +19,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 		return
 	}
 
+	var mu sync.Mutex
 	pool := pools.NewPool(defaultPoolSize * 4)
 	defer pool.WaitAll()
 
@@ -43,6 +46,8 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 			if res == nil {
 				return
 			}
+			mu.Lock()
+			defer mu.Unlock()
 			results = append(results, res...)
 		}(name, conf)
 	}
