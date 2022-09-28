@@ -20,7 +20,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 	}
 
 	var mu sync.Mutex
-	pool := pools.NewPool(defaultPoolSize * 4)
+	pool := pools.NewPool(defaultPoolSize)
 	defer pool.WaitAll()
 
 	for name, conf := range configs {
