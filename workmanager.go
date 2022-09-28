@@ -113,7 +113,7 @@ func (wm *WorkerManager) RegisterStep(
 	wm.stepRunners[from] = func(wm *WorkerManager) error {
 		defer catchPanic("%s step runner panic", from)
 
-		for ch := wm.GetRecvChan(from); ch != nil; _ = wm.GetLimiter(from).Wait(wm.ctx) {
+		for ch := wm.GetRecvChan(from); ch != nil; _ = wm.getLimiter(from).Wait(wm.ctx) {
 			select {
 			case <-wm.ctx.Done():
 				log.Info("step %s runner stopped", from)
@@ -177,11 +177,7 @@ func wrapChan(start func() error, chs []chan<- WorkTarget) (recvs []func(WorkTar
 }
 
 func (wm *WorkerManager) run(step WorkStep, runner func()) {
-	pool := wm.GetPool(step)
-	if pool == nil {
-		log.Warn("step %s's pool not found, task will not run", step)
-		return
-	}
+	pool := wm.getPool(step)
 
 	select {
 	case <-pool.AsyncWait():

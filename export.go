@@ -2,6 +2,8 @@ package workmanager
 
 import (
 	"context"
+
+	"golang.org/x/time/rate"
 )
 
 type (
@@ -17,6 +19,10 @@ type (
 	// StepCallback ...
 	StepCallback func(...WorkTarget) []WorkTarget
 )
+
+// ================================================
+// ================= Register API =================
+// ================================================
 
 // Register register worker and step runner/processor
 func Register(
@@ -48,6 +54,10 @@ func RegisterAfterCallbacks(step WorkStep, callbacks ...StepCallback) {
 	defaultWorkerMgr.RegisterAfterCallbacks(step, callbacks...)
 }
 
+// ================================================
+// ================== Server API ==================
+// ================================================
+
 // Serve daemon serve goroutine
 func Serve(steps ...WorkStep) { defaultWorkerMgr.Serve(steps...) }
 
@@ -62,13 +72,33 @@ func RecvFrom(step WorkStep, recv <-chan WorkTarget) error {
 // SetCacher set default work manager cacher
 func SetCacher(c Cacher) { defaultWorkerMgr.SetCacher(c) }
 
+// ================================================
+// ================ Step Operation ================
+// ================================================
+
 // ListSteps list all steps
 func ListSteps() []WorkStep { return defaultWorkerMgr.ListSteps() }
 
 // PoolStastus return pool status
 func PoolStatus(step WorkStep) (num, size int) { return defaultWorkerMgr.PoolStatus(step) }
 
-// Task api
+// SetPool set pool size
+func SetPool(size int, steps ...WorkStep) { defaultWorkerMgr.SetPool(size, steps...) }
+
+// SetDefaultPool set default pool
+func SetDefaultPool(size int) { defaultWorkerMgr.SetDefaultPool(size) }
+
+// SetLimiter set limiter
+func SetLimiter(rate rate.Limit, burst int, steps ...WorkStep) {
+	defaultWorkerMgr.SetLimiter(rate, burst, steps...)
+}
+
+// SetDefaultLimiter set default limiter
+func SetDefaultLimiter(rate rate.Limit, burst int) { defaultWorkerMgr.SetDefaultLimiter(rate, burst) }
+
+// ================================================
+// ================ Task Operation ================
+// ================================================
 
 // AddTask ...
 func AddTask(task WorkTask) { defaultWorkerMgr.AddTask(task) }

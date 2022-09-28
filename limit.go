@@ -29,8 +29,8 @@ type limitManager struct {
 	defaultLimiter *rate.Limiter
 }
 
-// GetDefaultLimiter get global limiter
-func (l *limitManager) GetDefaultLimiter() *rate.Limiter {
+// getDefaultLimiter get global limiter
+func (l *limitManager) getDefaultLimiter() *rate.Limiter {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	return l.defaultLimiter
@@ -45,8 +45,8 @@ func (l *limitManager) SetDefaultLimiter(r rate.Limit, b int) {
 	l.defaultLimiter = limiter
 }
 
-// GetLimiter get limiter for step
-func (l *limitManager) GetLimiter(step WorkStep) *rate.Limiter {
+// getLimiter get limiter for step
+func (l *limitManager) getLimiter(step WorkStep) *rate.Limiter {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	if limiter, ok := l.limiterMap[step]; ok {
@@ -56,14 +56,18 @@ func (l *limitManager) GetLimiter(step WorkStep) *rate.Limiter {
 	}
 }
 
-func (l *limitManager) SetLimiter(r rate.Limit, steps ...WorkStep) {
+func (l *limitManager) SetLimiter(r rate.Limit, b int, steps ...WorkStep) {
+	if len(steps) == 0 {
+		return
+	}
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for _, step := range steps {
 		if limiter, ok := l.limiterMap[step]; ok {
 			limiter.SetLimit(r)
 		} else {
-			l.limiterMap[step] = rate.NewLimiter(r, defaultBurst)
+			l.limiterMap[step] = rate.NewLimiter(r, b)
 		}
 	}
 }

@@ -23,28 +23,28 @@ func Test_limitManager(t *testing.T) {
 	}
 	t.Log("init ok")
 
-	if limitMgr.GetLimiter(limitStepA).Limit() != defaultStepLimit || limitMgr.GetLimiter(limitStepB).Limit() != defaultStepLimit {
-		t.Errorf("limit size error: expect %f, got: %f", limitMgr.GetLimiter(limitStepA).Limit(), defaultStepLimit)
+	if limitMgr.getLimiter(limitStepA).Limit() != defaultStepLimit || limitMgr.getLimiter(limitStepB).Limit() != defaultStepLimit {
+		t.Errorf("limit size error: expect %f, got: %f", limitMgr.getLimiter(limitStepA).Limit(), defaultStepLimit)
 	}
 	t.Log("limit size ok")
 
 	var newLimit rate.Limit = 9
 	limitMgr.SetLimiter(newLimit, limitStepA, limitStepC)
-	if limitMgr.GetLimiter(limitStepA).Limit() != newLimit ||
-		limitMgr.GetLimiter(limitStepB).Limit() != defaultStepLimit ||
-		limitMgr.GetLimiter(limitStepC).Limit() != newLimit {
+	if limitMgr.getLimiter(limitStepA).Limit() != newLimit ||
+		limitMgr.getLimiter(limitStepB).Limit() != defaultStepLimit ||
+		limitMgr.getLimiter(limitStepC).Limit() != newLimit {
 		t.Errorf("set limit size fail: expect %f, got %s:%f\t%s:%f\t%s:%f",
 			newLimit,
-			limitStepA, limitMgr.GetLimiter(limitStepA).Limit(),
-			limitStepB, limitMgr.GetLimiter(limitStepB).Limit(),
-			limitStepC, limitMgr.GetLimiter(limitStepC).Limit(),
+			limitStepA, limitMgr.getLimiter(limitStepA).Limit(),
+			limitStepB, limitMgr.getLimiter(limitStepB).Limit(),
+			limitStepC, limitMgr.getLimiter(limitStepC).Limit(),
 		)
 	}
 	t.Log("set limit ok")
 
 	for _, step := range []WorkStep{limitStepA, limitStepB, limitStepC} {
 		dataCh := make(chan struct{}, 999)
-		limiter := limitMgr.GetLimiter(step)
+		limiter := limitMgr.getLimiter(step)
 
 		var timeup bool
 		for tick := time.Tick(time.Second); !timeup; {
@@ -65,7 +65,7 @@ func Test_limitManager(t *testing.T) {
 	t.Log("limiter works ok")
 
 	limitMgr.DelLimiter(limitStepA)
-	if limitMgr.GetLimiter(limitStepA) != limitMgr.defaultLimiter {
+	if limitMgr.getLimiter(limitStepA) != limitMgr.defaultLimiter {
 		t.Errorf("delete step fail: delete limitStepA, got: %+v", limitMgr.limitSteps())
 	}
 	t.Log("delete limiter ok")

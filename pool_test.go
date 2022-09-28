@@ -21,28 +21,28 @@ func Test_poolManager(t *testing.T) {
 	}
 	t.Log("init ok")
 
-	if poolMgr.GetPool(poolStepA).Size() != defaultPoolSize || poolMgr.GetPool(poolStepB).Size() != defaultPoolSize {
-		t.Errorf("pool size error: expect %d, got: %d", defaultPoolSize, poolMgr.GetPool(poolStepA).Size())
+	if poolMgr.getPool(poolStepA).Size() != defaultPoolSize || poolMgr.getPool(poolStepB).Size() != defaultPoolSize {
+		t.Errorf("pool size error: expect %d, got: %d", defaultPoolSize, poolMgr.getPool(poolStepA).Size())
 	}
 	t.Log("pool size ok")
 
 	newSize := 99
 	poolMgr.SetPool(newSize, poolStepA, poolStepC)
-	if poolMgr.GetPool(poolStepA).Size() != newSize ||
-		poolMgr.GetPool(poolStepB).Size() != defaultPoolSize ||
-		poolMgr.GetPool(poolStepC).Size() != newSize {
+	if poolMgr.getPool(poolStepA).Size() != newSize ||
+		poolMgr.getPool(poolStepB).Size() != defaultPoolSize ||
+		poolMgr.getPool(poolStepC).Size() != newSize {
 		t.Errorf("set pool size fail: expect %d, got %s:%d\t%s:%d\t%s:%d",
 			newSize,
-			poolStepA, poolMgr.GetPool(poolStepA).Size(),
-			poolStepB, poolMgr.GetPool(poolStepB).Size(),
-			poolStepC, poolMgr.GetPool(poolStepC).Size(),
+			poolStepA, poolMgr.getPool(poolStepA).Size(),
+			poolStepB, poolMgr.getPool(poolStepB).Size(),
+			poolStepC, poolMgr.getPool(poolStepC).Size(),
 		)
 	}
 	t.Log("set pool ok")
 
 	for _, step := range []WorkStep{poolStepA, poolStepB, poolStepC} {
 		dataCh := make(chan struct{}, 999)
-		pool := poolMgr.GetPool(step)
+		pool := poolMgr.getPool(step)
 
 		var timeup bool
 		for tick := time.Tick(100 * time.Millisecond); !timeup; {
@@ -66,7 +66,7 @@ func Test_poolManager(t *testing.T) {
 	t.Log("pool works ok")
 
 	poolMgr.DelPool(poolStepA)
-	if poolMgr.GetPool(poolStepA) != nil {
+	if poolMgr.getPool(poolStepA) != poolMgr.defaultPool {
 		t.Errorf("delete step fail: delete poolStepA, got: %+v", poolMgr.poolSteps())
 	}
 	t.Log("delete pool ok")
