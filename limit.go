@@ -60,12 +60,19 @@ func (l *limitManager) SetLimiter(r rate.Limit, b int, steps ...WorkStep) {
 	if len(steps) == 0 {
 		return
 	}
+	if r < 0 {
+		r = defaultStepLimit
+	}
+	if b < 0 {
+		b = defaultBurst
+	}
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for _, step := range steps {
 		if limiter, ok := l.limiterMap[step]; ok {
 			limiter.SetLimit(r)
+			limiter.SetBurst(b)
 		} else {
 			l.limiterMap[step] = rate.NewLimiter(r, b)
 		}

@@ -64,7 +64,12 @@ func (wm *WorkerManager) StartStep(step WorkStep, opts ...PipeOption) {
 }
 
 func (wm *WorkerManager) SetStep(step WorkStep, opts ...PipeOption) {
-	wm.SetPool(0, step)
+	if wm.getPool(step) == wm.defaultPool {
+		wm.SetPool(0, step)
+	}
+	if wm.getLimiter(step) == wm.defaultLimiter {
+		wm.SetLimiter(0, 0, step)
+	}
 	wm.SetPipe(step, opts...)
 }
 
