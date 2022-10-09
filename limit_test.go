@@ -29,7 +29,7 @@ func Test_limitManager(t *testing.T) {
 	t.Log("limit size ok")
 
 	var newLimit rate.Limit = 9
-	limitMgr.SetLimiter(newLimit, limitStepA, limitStepC)
+	limitMgr.SetLimiter(newLimit, 1, limitStepA, limitStepC)
 	if limitMgr.getLimiter(limitStepA).Limit() != newLimit ||
 		limitMgr.getLimiter(limitStepB).Limit() != defaultStepLimit ||
 		limitMgr.getLimiter(limitStepC).Limit() != newLimit {

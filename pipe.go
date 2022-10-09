@@ -22,43 +22,52 @@ var PipeChSize = func(size int) PipeOption {
 
 // NewPoolManager ...
 func NewPipeManager(_ context.Context, steps ...WorkStep) *pipeManager { // nolint
-	m := make(map[WorkStep]chan WorkTarget, len(steps))
+	m := make(map[WorkStep]*pipe, len(steps))
 	for _, step := range steps {
-		m[step] = make(chan WorkTarget, defaultChanSize)
+		ch := make(chan WorkTarget, defaultChanSize)
+		m[step] = newPipe(ch, ch)
 	}
-	return &pipeManager{chanMap: m}
+	return &pipeManager{pipeMap: m}
 }
+
+func newPipe(recv <-chan WorkTarget, send chan<- WorkTarget) *pipe {
+	return &pipe{recv: recv, send: send}
+}
+
+type pipe struct {
+	recv <-chan WorkTarget
+	send chan<- WorkTarget
+}
+
+func (p *pipe) Set(recv <-chan WorkTarget, send chan<- WorkTarget) {
+	p.recv = recv
+	p.send = send
+}
+func (p *pipe) SetRecv(recv <-chan WorkTarget) { p.recv = recv }
+func (p *pipe) SetSend(send chan<- WorkTarget) { p.send = send }
 
 type pipeManager struct {
 	mu      sync.RWMutex
-	chanMap map[WorkStep]chan WorkTarget
+	pipeMap map[WorkStep]*pipe
 }
 
 func (pm *pipeManager) GetRecvChans(steps ...WorkStep) (chs []<-chan WorkTarget) {
 	for _, step := range steps {
-		if ch := pm.GetRecvChan(step); ch != nil {
-			chs = append(chs, ch)
-		}
+		chs = append(chs, pm.GetRecvChan(step))
 	}
 	return chs
 }
 func (pm *pipeManager) GetSendChans(steps ...WorkStep) (chs []chan<- WorkTarget) {
 	for _, step := range steps {
-		if ch := pm.GetSendChan(step); ch != nil {
-			chs = append(chs, ch)
-		}
+		chs = append(chs, pm.GetSendChan(step))
 	}
 	return chs
 }
-func (pm *pipeManager) GetRecvChan(step WorkStep) <-chan WorkTarget { return pm.getChan(step) }
-func (pm *pipeManager) GetSendChan(step WorkStep) chan<- WorkTarget { return pm.getChan(step) }
-func (pm *pipeManager) getChan(step WorkStep) chan WorkTarget {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-	return pm.chanMap[step]
-}
+func (pm *pipeManager) GetRecvChan(step WorkStep) <-chan WorkTarget { return pm.getPipe(step).recv }
+func (pm *pipeManager) GetSendChan(step WorkStep) chan<- WorkTarget { return pm.getPipe(step).send }
 
-func (pm *pipeManager) HasPipe(step WorkStep) bool { return pm.getChan(step) != nil }
+func (pm *pipeManager) HasPipe(step WorkStep) bool { return pm.getPipe(step) != nil }
+
 func (pm *pipeManager) SetPipe(step WorkStep, opts ...PipeOption) {
 	ch := make(chan WorkTarget, defaultChanSize)
 	for _, opt := range opts {
@@ -67,12 +76,41 @@ func (pm *pipeManager) SetPipe(step WorkStep, opts ...PipeOption) {
 
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	pm.chanMap[step] = ch
+	pm.pipeMap[step] = newPipe(ch, ch)
 }
+
+func (pm *pipeManager) SetPipeChan(step WorkStep, recv <-chan WorkTarget, send chan<- WorkTarget) {
+	if pipe := pm.pipeMap[step]; pipe != nil {
+		pipe.Set(recv, send)
+	}
+}
+func (pm *pipeManager) SetRecvChan(step WorkStep, recv <-chan WorkTarget) {
+	if pipe := pm.pipeMap[step]; pipe != nil {
+		pipe.SetRecv(recv)
+	}
+}
+func (pm *pipeManager) SetSendChan(step WorkStep, send chan<- WorkTarget) {
+	if pipe := pm.pipeMap[step]; pipe != nil {
+		pipe.SetSend(send)
+	}
+}
+
+func (pm *pipeManager) MITMSendChan(step WorkStep, newSendCh chan<- WorkTarget) chan<- WorkTarget {
+	send := pm.GetSendChan(step)
+	pm.SetSendChan(step, newSendCh)
+	return send
+}
+
 func (pm *pipeManager) DelPipe(steps ...WorkStep) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	for _, step := range steps {
-		delete(pm.chanMap, step)
+		delete(pm.pipeMap, step)
 	}
+}
+
+func (pm *pipeManager) getPipe(step WorkStep) *pipe {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+	return pm.pipeMap[step]
 }
