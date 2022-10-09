@@ -26,6 +26,8 @@ func ExampleWorkerManager_newInstance() {
 		return t
 	})
 
+	mgr.SetPipe(wm.StepA, wm.PipeChSize(8))
+
 	mgr.Serve()
 
 	task := wm.NewTask(context.Background())
@@ -66,6 +68,8 @@ func ExampleWorkerManager_singleton() {
 		fmt.Printf("step %s after callback got target: %+v\n", wm.StepA, t[0])
 		return t
 	})
+
+	wm.SetPipe(wm.StepA, wm.PipeChSize(8))
 
 	wm.Serve()
 

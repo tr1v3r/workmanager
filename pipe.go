@@ -95,6 +95,12 @@ func (pm *pipeManager) SetSendChan(step WorkStep, send chan<- WorkTarget) {
 	}
 }
 
+func (pm *pipeManager) MITMSendChan(step WorkStep, newSendCh chan<- WorkTarget) chan<- WorkTarget {
+	send := pm.GetSendChan(step)
+	pm.SetSendChan(step, newSendCh)
+	return send
+}
+
 func (pm *pipeManager) DelPipe(steps ...WorkStep) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
