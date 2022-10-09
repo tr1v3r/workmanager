@@ -60,10 +60,10 @@ func (wm *WorkerManager) StartStep(step WorkStep, opts ...PipeOption) {
 	if wm.HasPipe(step) { // 存在则不需处理
 		return
 	}
-	wm.SetStep(step, opts...)
+	wm.InitStep(step, opts...)
 }
 
-func (wm *WorkerManager) SetStep(step WorkStep, opts ...PipeOption) {
+func (wm *WorkerManager) InitStep(step WorkStep, opts ...PipeOption) {
 	if wm.getPool(step) == wm.defaultPool {
 		wm.SetPool(0, step)
 	}
