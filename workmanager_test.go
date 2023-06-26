@@ -42,7 +42,7 @@ var (
 		count++
 		return &DummyTestWorker{Name: name, Finish: f}
 	}
-	DummyStepRunner StepRunner = func(work Work, target WorkTarget, nexts ...func(WorkTarget)) {
+	DummyStepRunner StepRunner = func(_ context.Context, work Work, target WorkTarget, nexts ...func(WorkTarget)) {
 		var workerName WorkerName
 		switch target.(*DummyTestTarget).Step {
 		case StepA:

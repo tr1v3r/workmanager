@@ -136,7 +136,8 @@ func (wm *WorkerManager) RegisterStep(
 					callbacks := wm.GetCallbacks(from)
 
 					runner(
-						wrapWork(callbacks.BeforeWork(), wm.Work, callbacks.AfterWork()),
+						task.Context(),
+						wrapWork(task.Context(), callbacks.BeforeWork(), wm.Work, callbacks.AfterWork()),
 						target,
 						wrapChan(task.Start, wm.GetSendChans(to...))...,
 					)
@@ -147,10 +148,10 @@ func (wm *WorkerManager) RegisterStep(
 	}
 }
 
-func wrapWork(before []StepCallback, work Work, after []StepCallback) Work {
+func wrapWork(ctx context.Context, before []StepCallback, work Work, after []StepCallback) Work {
 	return func(target WorkTarget, configs map[WorkerName]WorkerConfig) ([]WorkTarget, error) {
 		for _, call := range before {
-			if results := call(target); len(results) > 0 {
+			if results := call(ctx, target); len(results) > 0 {
 				target = results[0]
 			} else {
 				target = nil
@@ -164,7 +165,7 @@ func wrapWork(before []StepCallback, work Work, after []StepCallback) Work {
 			res.SetToken(target.Token())
 		}
 		for _, call := range after {
-			results = call(results...)
+			results = call(ctx, results...)
 		}
 		return results, nil
 	}

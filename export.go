@@ -14,10 +14,10 @@ type (
 	WorkerBuilder func(ctx context.Context, args map[string]interface{}) Worker
 
 	// StepRunner ...
-	StepRunner func(work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
+	StepRunner func(ctx context.Context, work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
 
 	// StepCallback ...
-	StepCallback func(...WorkTarget) []WorkTarget
+	StepCallback func(ctx context.Context, results ...WorkTarget) []WorkTarget
 )
 
 // ================================================
