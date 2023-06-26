@@ -14,7 +14,7 @@ func TestPipeManager_recver(t *testing.T) {
 	mgr.RegisterWorker(DummyWorkerB, DummyBuilder)
 
 	mgr.RegisterStep(StepA, DummyStepRunner, StepB)
-	mgr.RegisterStep(StepB, TransferRunner(func(target WorkTarget) {
+	mgr.RegisterStep(StepB, TransferRunner(func(ctx context.Context, target WorkTarget) {
 		fmt.Printf("%s got target %+v, transfering...", StepB, target)
 	}))
 

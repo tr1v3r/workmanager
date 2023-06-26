@@ -32,6 +32,7 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 	}
 }
 
+// WorkerManager worker manager
 type WorkerManager struct {
 	ctx context.Context
 
@@ -48,14 +49,17 @@ type WorkerManager struct {
 	stepRunners    map[WorkStep]func(*WorkerManager) error
 }
 
+// WithContext set context
 func (wm WorkerManager) WithContext(ctx context.Context) *WorkerManager {
 	wm.ctx = ctx
 	wm.taskManager = wm.taskManager.WithContext(ctx)
 	return &wm
 }
 
+// SetCacher set cacher
 func (wm *WorkerManager) SetCacher(c Cacher) { wm.cacher = c }
 
+// StartStep  start step
 func (wm *WorkerManager) StartStep(step WorkStep, opts ...PipeOption) {
 	if wm.HasPipe(step) { // 存在则不需处理
 		return
@@ -63,6 +67,7 @@ func (wm *WorkerManager) StartStep(step WorkStep, opts ...PipeOption) {
 	wm.InitStep(step, opts...)
 }
 
+// InitStep initialize step
 func (wm *WorkerManager) InitStep(step WorkStep, opts ...PipeOption) {
 	if wm.getPool(step) == wm.defaultPool {
 		wm.SetPool(0, step)
@@ -73,12 +78,14 @@ func (wm *WorkerManager) InitStep(step WorkStep, opts ...PipeOption) {
 	wm.SetPipe(step, opts...)
 }
 
+// RemoveStep remove steps
 func (wm *WorkerManager) RemoveStep(steps ...WorkStep) {
-	wm.DelPipe(steps...)
-	wm.DelPool(steps...)
+	wm.RemovePipe(steps...)
+	wm.RemovePool(steps...)
 }
 
-func (wm *WorkerManager) ListSteps() (steps []WorkStep) {
+// ListStep list steps
+func (wm *WorkerManager) ListStep() (steps []WorkStep) {
 	wm.mu.RLock()
 	defer wm.mu.RUnlock()
 	for step := range wm.stepRunners {
@@ -87,6 +94,7 @@ func (wm *WorkerManager) ListSteps() (steps []WorkStep) {
 	return steps
 }
 
+// Register register step, runner and workers
 func (wm *WorkerManager) Register(
 	from WorkStep,
 	runner StepRunner,
@@ -99,6 +107,7 @@ func (wm *WorkerManager) Register(
 	wm.RegisterStep(from, runner, to...)
 }
 
+// RegisterWorker register worker
 func (wm *WorkerManager) RegisterWorker(
 	name WorkerName,
 	builder WorkerBuilder,
@@ -108,6 +117,7 @@ func (wm *WorkerManager) RegisterWorker(
 	wm.workerBuilders[name] = builder
 }
 
+// RegisterStep register step
 func (wm *WorkerManager) RegisterStep(
 	from WorkStep,
 	runner StepRunner,
@@ -128,7 +138,7 @@ func (wm *WorkerManager) RegisterStep(
 					defer catchPanic("%s step work panic", from)
 
 					task := wm.GetTask(target.Token())
-					defer task.Done()
+					defer task.Done() // nolint
 					if wm.cacher != nil && !wm.cacher.Allow(target) {
 						return
 					}
@@ -175,7 +185,7 @@ func wrapChan(start func() error, chs []chan<- WorkTarget) (recvs []func(WorkTar
 	for _, ch := range chs {
 		ch := ch
 		recvs = append(recvs, func(target WorkTarget) {
-			start()
+			_ = start()
 			ch <- target
 		})
 	}
@@ -198,13 +208,18 @@ func (wm *WorkerManager) run(step WorkStep, runner func()) {
 }
 
 // ============ callbacks ============
+
+// RegisterBeforeCallbacks register before callback funcs
 func (wm *WorkerManager) RegisterBeforeCallbacks(step WorkStep, callbacks ...StepCallback) {
 	wm.GetCallbacks(step).RegisterBefore(callbacks...)
 }
+
+// RegisterAfterCallbacks register after callbacks
 func (wm *WorkerManager) RegisterAfterCallbacks(step WorkStep, callbacks ...StepCallback) {
 	wm.GetCallbacks(step).RegisterAfter(callbacks...)
 }
 
+// Serve serve
 func (wm *WorkerManager) Serve(steps ...WorkStep) {
 	log.Info("starting worker routine...")
 
@@ -223,6 +238,7 @@ func (wm *WorkerManager) Serve(steps ...WorkStep) {
 	}
 }
 
+// Recv recv func
 func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
 	ch := wm.GetSendChan(step)
 	if ch == nil {
@@ -238,6 +254,7 @@ func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
 	return nil
 }
 
+// RecvFrom recv from chan
 func (wm *WorkerManager) RecvFrom(step WorkStep, recv <-chan WorkTarget) error {
 	go func() {
 		for {

@@ -83,7 +83,7 @@ func (p *poolManager) SetPool(size int, steps ...WorkStep) {
 	}
 }
 
-func (p *poolManager) DelPool(steps ...WorkStep) {
+func (p *poolManager) RemovePool(steps ...WorkStep) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for _, step := range steps {

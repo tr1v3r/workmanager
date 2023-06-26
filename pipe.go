@@ -20,7 +20,7 @@ var PipeChSize = func(size int) PipeOption {
 	}
 }
 
-// NewPoolManager ...
+// NewPipeManager ...
 func NewPipeManager(_ context.Context, steps ...WorkStep) *pipeManager { // nolint
 	m := make(map[WorkStep]*pipe, len(steps))
 	for _, step := range steps {
@@ -101,7 +101,7 @@ func (pm *pipeManager) MITMSendChan(step WorkStep, newSendCh chan<- WorkTarget) 
 	return send
 }
 
-func (pm *pipeManager) DelPipe(steps ...WorkStep) {
+func (pm *pipeManager) RemovePipe(steps ...WorkStep) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	for _, step := range steps {

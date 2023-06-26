@@ -76,8 +76,8 @@ func SetCacher(c Cacher) { defaultWorkerMgr.SetCacher(c) }
 // ================ Step Operation ================
 // ================================================
 
-// ListSteps list all steps
-func ListSteps() []WorkStep { return defaultWorkerMgr.ListSteps() }
+// ListStep list all steps
+func ListStep() []WorkStep { return defaultWorkerMgr.ListStep() }
 
 // PoolStastus return pool status
 func PoolStatus(step WorkStep) (num, size int) { return defaultWorkerMgr.PoolStatus(step) }

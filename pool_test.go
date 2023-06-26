@@ -65,7 +65,7 @@ func Test_poolManager(t *testing.T) {
 	}
 	t.Log("pool works ok")
 
-	poolMgr.DelPool(poolStepA)
+	poolMgr.RemovePool(poolStepA)
 	if poolMgr.getPool(poolStepA) != poolMgr.defaultPool {
 		t.Errorf("delete step fail: delete poolStepA, got: %+v", poolMgr.poolSteps())
 	}
