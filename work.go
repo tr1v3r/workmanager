@@ -3,8 +3,8 @@ package workmanager
 import (
 	"sync"
 
-	"github.com/riverchu/pkg/log"
-	"github.com/riverchu/pkg/pools"
+	"github.com/tr1v3r/pkg/log"
+	"github.com/tr1v3r/pkg/pools"
 )
 
 func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error) {

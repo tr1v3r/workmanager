@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	wm "github.com/riverchu/workmanager"
+	wm "github.com/tr1v3r/workmanager"
 )
 
 func ExampleWorkerManager_newInstance() {

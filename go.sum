@@ -6,8 +6,8 @@ github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+
 github.com/miekg/dns v1.1.50/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7XnME=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/riverchu/pkg v0.0.1 h1:nULBclFAO5tNeZxjC8lnqj67EfHZknl/pOFWDLzAbcM=
-github.com/riverchu/pkg v0.0.1/go.mod h1:yJmyBGmBUeVn4bWvC+ZTvWx+Ub8LPPeV7Ff9T+0LiyQ=
+github.com/tr1v3r/pkg v0.0.1 h1:nULBclFAO5tNeZxjC8lnqj67EfHZknl/pOFWDLzAbcM=
+github.com/tr1v3r/pkg v0.0.1/go.mod h1:yJmyBGmBUeVn4bWvC+ZTvWx+Ub8LPPeV7Ff9T+0LiyQ=
 github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=
 github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

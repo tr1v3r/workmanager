@@ -1,10 +1,10 @@
-module github.com/riverchu/workmanager
+module github.com/tr1v3r/workmanager
 
 go 1.17
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/riverchu/pkg v0.0.1
+	github.com/tr1v3r/pkg v0.0.1
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 )
 

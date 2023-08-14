@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/riverchu/pkg/log"
+	"github.com/tr1v3r/pkg/log"
 )
 
 var defaultWorkerMgr = NewWorkerManager(context.Background())

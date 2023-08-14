@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/riverchu/pkg/log"
+	"github.com/tr1v3r/pkg/log"
 )
 
 // catchPanic catch panic

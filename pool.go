@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/riverchu/pkg/pools"
+	"github.com/tr1v3r/pkg/pools"
 )
 
 const flex = 1
