@@ -96,15 +96,15 @@ func (wm *WorkerManager) ListStep() (steps []WorkStep) {
 
 // Register register step, runner and workers
 func (wm *WorkerManager) Register(
-	from WorkStep,
+	current WorkStep,
 	runner StepRunner,
 	workers map[WorkerName]WorkerBuilder,
-	to ...WorkStep,
+	nexts ...WorkStep,
 ) {
 	for name, builder := range workers {
 		wm.RegisterWorker(name, builder)
 	}
-	wm.RegisterStep(from, runner, to...)
+	wm.RegisterStep(current, runner, nexts...)
 }
 
 // RegisterWorker register worker

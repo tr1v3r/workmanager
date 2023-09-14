@@ -87,5 +87,6 @@ func (w *DummyTestWorker) Finished() <-chan struct{} { return w.Finish }
 
 type DummyTestTarget struct {
 	DummyTarget
-	Step WorkStep
+	Step   WorkStep
+	Remark string
 }

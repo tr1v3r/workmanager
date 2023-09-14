@@ -7,6 +7,7 @@ import (
 	"github.com/tr1v3r/pkg/pools"
 )
 
+// Work workmangager's work
 func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error) {
 	task := wm.GetTask(target.Token())
 	if task == nil {
@@ -24,7 +25,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 	defer pool.WaitAll()
 
 	for name, conf := range configs {
-		if !conf.Active() {
+		if conf == nil || !conf.Active() {
 			continue
 		}
 
@@ -36,7 +37,17 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 		go func(name WorkerName, c WorkerConfig) {
 			defer pool.Done()
 
-			worker := wm.workerBuilders[name](task.Context(), c.Args())
+			builder, ok := wm.workerBuilders[name]
+			if !ok {
+				log.Error("no such worker builder: %s", name)
+				return
+			}
+
+			worker := builder(task.Context(), c.Args())
+			if worker == nil {
+				log.Error("worker builder return nil")
+				return
+			}
 
 			res, err := wm.work(worker, target)
 			if err != nil {
