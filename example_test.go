@@ -11,23 +11,27 @@ import (
 func ExampleWorkerManager_newInstance() {
 	mgr := wm.NewWorkerManager(context.Background())
 
-	mgr.RegisterWorker(wm.DummyWorkerA, wm.DummyBuilder)
-	mgr.RegisterWorker(wm.DummyWorkerB, wm.DummyBuilder)
+	// register worker by workerbuilder with name
+	mgr.RegisterWorker("worker_a", wm.DummyBuilder)
+	mgr.RegisterWorker("worker_b", wm.DummyBuilder)
 
+	// register step, specify from which step to which step
 	mgr.RegisterStep(wm.StepA, wm.DummyStepRunner, wm.StepB)
 	mgr.RegisterStep(wm.StepB, wm.DummyStepRunner)
 
-	mgr.RegisterBeforeCallbacks(wm.StepA, func(ctx context.Context, t ...wm.WorkTarget) []wm.WorkTarget {
+	// register hooks
+	mgr.RegisterBeforeCallbacks(wm.StepA, func(_ context.Context, t ...wm.WorkTarget) []wm.WorkTarget {
 		fmt.Printf("step %s before callback got target: %+v\n", wm.StepA, t[0])
 		return t
 	})
-	mgr.RegisterAfterCallbacks(wm.StepA, func(ctx context.Context, t ...wm.WorkTarget) []wm.WorkTarget {
+	mgr.RegisterAfterCallbacks(wm.StepA, func(_ context.Context, t ...wm.WorkTarget) []wm.WorkTarget {
 		fmt.Printf("step %s after callback got target: %+v\n", wm.StepA, t[0])
 		return t
 	})
 
 	mgr.SetPipe(wm.StepA, wm.PipeChSize(8))
 
+	// start serve
 	mgr.Serve()
 
 	task := wm.NewTask(context.Background())
@@ -60,11 +64,11 @@ func ExampleWorkerManager_singleton() {
 	wm.RegisterStep(wm.StepA, wm.DummyStepRunner, wm.StepB)
 	wm.RegisterStep(wm.StepB, wm.DummyStepRunner)
 
-	wm.RegisterBeforeCallbacks(wm.StepA, func(ctx context.Context, t ...wm.WorkTarget) []wm.WorkTarget {
+	wm.RegisterBeforeCallbacks(wm.StepA, func(_ context.Context, t ...wm.WorkTarget) []wm.WorkTarget {
 		fmt.Printf("step %s before callback got target: %+v\n", wm.StepA, t[0])
 		return t
 	})
-	wm.RegisterAfterCallbacks(wm.StepA, func(ctx context.Context, t ...wm.WorkTarget) []wm.WorkTarget {
+	wm.RegisterAfterCallbacks(wm.StepA, func(_ context.Context, t ...wm.WorkTarget) []wm.WorkTarget {
 		fmt.Printf("step %s after callback got target: %+v\n", wm.StepA, t[0])
 		return t
 	})

@@ -117,25 +117,23 @@ func (wm *WorkerManager) RegisterWorker(
 	wm.workerBuilders[name] = builder
 }
 
-// RegisterStep register step
-func (wm *WorkerManager) RegisterStep(
-	from WorkStep,
-	runner StepRunner,
-	to ...WorkStep,
-) {
+// RegisterStep register step and its runner
+// step runner determines how the step works, which workers to call, what configurations to use for each,
+// and what the next step is
+func (wm *WorkerManager) RegisterStep(current WorkStep, runner StepRunner, nexts ...WorkStep) {
 	wm.mu.Lock()
 	defer wm.mu.Unlock()
-	wm.stepRunners[from] = func(wm *WorkerManager) error {
-		defer catchPanic("%s step runner panic", from)
+	wm.stepRunners[current] = func(wm *WorkerManager) error {
+		defer catchPanic("%s step runner panic", current)
 
-		for ch := wm.GetRecvChan(from); ch != nil; _ = wm.getLimiter(from).Wait(wm.ctx) {
+		for ch := wm.GetRecvChan(current); ch != nil; _ = wm.getLimiter(current).Wait(wm.ctx) {
 			select {
 			case <-wm.ctx.Done():
-				log.Info("step %s runner stopped", from)
+				log.Info("step %s runner stopped", current)
 				return wm.ctx.Err()
 			case target := <-ch:
-				wm.run(from, func() {
-					defer catchPanic("%s step work panic", from)
+				wm.run(current, func() {
+					defer catchPanic("%s step work panic", current)
 
 					task := wm.GetTask(target.Token())
 					defer task.Done() // nolint
@@ -143,13 +141,13 @@ func (wm *WorkerManager) RegisterStep(
 						return
 					}
 
-					callbacks := wm.GetCallbacks(from)
+					callbacks := wm.GetCallbacks(current)
 
 					runner(
 						task.Context(),
 						wrapWork(task.Context(), callbacks.BeforeWork(), wm.Work, callbacks.AfterWork()),
 						target,
-						wrapChan(task.Start, wm.GetSendChans(to...))...,
+						wrapChan(task.Start, wm.GetSendChans(nexts...))...,
 					)
 				})
 			}
@@ -219,22 +217,15 @@ func (wm *WorkerManager) RegisterAfterCallbacks(step WorkStep, callbacks ...Step
 	wm.GetCallbacks(step).RegisterAfter(callbacks...)
 }
 
-// Serve serve
+// Serve start serve with specifid steps, do nothing when steps == nil
 func (wm *WorkerManager) Serve(steps ...WorkStep) {
 	log.Info("starting worker routine...")
 
 	wm.mu.RLock()
 	defer wm.mu.RUnlock()
-	if len(steps) > 0 {
-		for _, step := range steps {
-			wm.StartStep(step)
-			go wm.stepRunners[step](wm) // nolint
-		}
-	} else {
-		for step, runner := range wm.stepRunners {
-			wm.StartStep(step)
-			go runner(wm) // nolint
-		}
+	for _, step := range steps {
+		wm.StartStep(step)
+		go wm.stepRunners[step](wm) // nolint
 	}
 }
 
@@ -265,7 +256,7 @@ func (wm *WorkerManager) RecvFrom(step WorkStep, recv <-chan WorkTarget) error {
 				if !ok {
 					return
 				}
-				wm.Recv(step, target)
+				_ = wm.Recv(step, target)
 			}
 		}
 	}()

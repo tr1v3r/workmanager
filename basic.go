@@ -49,6 +49,17 @@ type WorkTarget interface {
 	TTL() int
 }
 
+// NewWorkTarget target/result
+// TODO finish
+type NewWorkTarget interface {
+	// Token return target belong to which task
+	Token() string
+	// TTL return target time to live
+	TTL() int
+	// Clone return target clone
+	Clone() NewWorkTarget
+}
+
 // WorkTask work task
 type WorkTask interface {
 	Start() error
