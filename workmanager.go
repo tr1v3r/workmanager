@@ -120,7 +120,7 @@ func (wm *WorkerManager) RegisterWorker(
 // RegisterStep register step and its runner
 // step runner determines how the step works, which workers to call, what configurations to use for each,
 // and what the next step is
-func (wm *WorkerManager) RegisterStep(current WorkStep, runner StepRunner, nexts ...WorkStep) {
+func (wm *WorkerManager) RegisterStep(current WorkStep, stepRun StepRunner, nexts ...WorkStep) {
 	wm.mu.Lock()
 	defer wm.mu.Unlock()
 	wm.stepRunners[current] = func(wm *WorkerManager) error {
@@ -142,8 +142,7 @@ func (wm *WorkerManager) RegisterStep(current WorkStep, runner StepRunner, nexts
 
 					callbacks := wm.GetCallbacks(current)
 
-					runner(
-						task.Context(),
+					stepRun(task.Context(),
 						wrapWork(task.Context(), callbacks.BeforeWork(), wm.Work, callbacks.AfterWork()),
 						target,
 						wrapChan(wm.GetSendChans(nexts...))...,
@@ -167,9 +166,6 @@ func wrapWork(ctx context.Context, before []StepCallback, work Work, after []Ste
 		results, err := work(target, configs)
 		if err != nil {
 			return nil, err
-		}
-		for _, res := range results {
-			res.SetToken(target.Token())
 		}
 		for _, call := range after {
 			results = call(ctx, results...)

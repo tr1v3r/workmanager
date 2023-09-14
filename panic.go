@@ -8,7 +8,7 @@ import (
 )
 
 // catchPanic catch panic
-func catchPanic(format string, args ...interface{}) {
+func catchPanic(format string, args ...any) {
 	if e := recover(); e != nil {
 		log.Error(format+": %v\n%v", append(args, e, catchStack())...)
 	}

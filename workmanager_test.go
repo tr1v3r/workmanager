@@ -29,7 +29,7 @@ const (
 var (
 	count = 0
 
-	DummyBuilder WorkerBuilder = func(_ context.Context, _ map[string]interface{}) Worker {
+	DummyBuilder WorkerBuilder = func(_ context.Context, _ map[string]any) Worker {
 		f := make(chan struct{}, 1)
 		close(f)
 		var name WorkerName
@@ -89,4 +89,5 @@ type DummyTestTarget struct {
 	DummyTarget
 	Step   WorkStep
 	Remark string
+	Count  int
 }

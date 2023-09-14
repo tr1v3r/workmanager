@@ -7,8 +7,8 @@ var _ WorkerConfig = new(DummyConfig)
 // DummyConfig dummy config
 type DummyConfig struct{}
 
-func (c *DummyConfig) Args() map[string]interface{} { return nil }
-func (c *DummyConfig) Active() bool                 { return true }
+func (c *DummyConfig) Args() map[string]any { return nil }
+func (c *DummyConfig) Active() bool         { return true }
 
 var _ Worker = new(DummyWorker)
 
@@ -28,8 +28,6 @@ func (c *DummyWorker) Terminate() error                      { return nil }
 // DummyTarget dummy target
 type DummyTarget struct{ TaskToken string }
 
-func (t *DummyTarget) Token() string                             { return t.TaskToken }
-func (t *DummyTarget) SetToken(token string)                     { t.TaskToken = token }
-func (t *DummyTarget) Key() string                               { return "" }
-func (t *DummyTarget) Trans(step WorkStep) ([]WorkTarget, error) { return []WorkTarget{t}, nil }
-func (t *DummyTarget) TTL() int                                  { return 1 }
+func (t *DummyTarget) Token() string { return t.TaskToken }
+func (t *DummyTarget) Key() string   { return "" }
+func (t *DummyTarget) TTL() int      { return 1 }

@@ -34,30 +34,19 @@ type Cacher interface {
 
 // WorkerConfig worker configure
 type WorkerConfig interface {
-	Args() map[string]interface{}
+	Args() map[string]any
 	Active() bool
 }
 
 // WorkTarget target/result
 type WorkTarget interface {
-	Token() string
-	SetToken(token string)
-	Key() string
-
-	Trans(step WorkStep) ([]WorkTarget, error)
-
-	TTL() int
-}
-
-// NewWorkTarget target/result
-// TODO finish
-type NewWorkTarget interface {
 	// Token return target belong to which task
 	Token() string
+
+	// Key return target unique key
+	Key() string
 	// TTL return target time to live
 	TTL() int
-	// Clone return target clone
-	Clone() NewWorkTarget
 }
 
 // WorkTask work task

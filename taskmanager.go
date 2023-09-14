@@ -57,12 +57,9 @@ var _ WorkTask = new(dummyTask)
 
 type dummyTask struct{}
 
-func (*dummyTask) Start() error             { return nil }
-func (*dummyTask) StartN(n int64) error     { return nil }
-func (*dummyTask) Done() error              { return nil }
 func (*dummyTask) Cancel() error            { return nil }
 func (*dummyTask) Finish() error            { return nil }
 func (*dummyTask) IsCanceled() bool         { return false }
 func (*dummyTask) IsFinished() bool         { return false }
 func (*dummyTask) Token() string            { return "" }
-func (*dummyTask) Context() context.Context { return nil }
+func (*dummyTask) Context() context.Context { return context.Background() }
