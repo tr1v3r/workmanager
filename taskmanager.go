@@ -49,9 +49,9 @@ func (t *taskManager) GetTask(taskToken string) (task WorkTask) {
 }
 
 func (t *taskManager) CancelTask(taskToken string) error { return t.GetTask(taskToken).Cancel() }
-func (t *taskManager) TaskStart(taskToken string) error  { return t.GetTask(taskToken).Start() }
-func (t *taskManager) TaskDone(taskToken string) error   { return t.GetTask(taskToken).Done() }
 func (t *taskManager) IsCanceled(taskToken string) bool  { return t.GetTask(taskToken).IsCanceled() }
+func (t *taskManager) FinishTask(taskToken string) error { return t.GetTask(taskToken).Finish() }
+func (t *taskManager) IsFinished(taskToken string) bool  { return t.GetTask(taskToken).IsFinished() }
 
 var _ WorkTask = new(dummyTask)
 
@@ -61,6 +61,7 @@ func (*dummyTask) Start() error             { return nil }
 func (*dummyTask) StartN(n int64) error     { return nil }
 func (*dummyTask) Done() error              { return nil }
 func (*dummyTask) Cancel() error            { return nil }
+func (*dummyTask) Finish() error            { return nil }
 func (*dummyTask) IsCanceled() bool         { return false }
 func (*dummyTask) IsFinished() bool         { return false }
 func (*dummyTask) Token() string            { return "" }

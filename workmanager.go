@@ -136,7 +136,6 @@ func (wm *WorkerManager) RegisterStep(current WorkStep, runner StepRunner, nexts
 					defer catchPanic("%s step work panic", current)
 
 					task := wm.GetTask(target.Token())
-					defer task.Done() // nolint
 					if wm.cacher != nil && !wm.cacher.Allow(target) {
 						return
 					}
@@ -147,7 +146,7 @@ func (wm *WorkerManager) RegisterStep(current WorkStep, runner StepRunner, nexts
 						task.Context(),
 						wrapWork(task.Context(), callbacks.BeforeWork(), wm.Work, callbacks.AfterWork()),
 						target,
-						wrapChan(task.Start, wm.GetSendChans(nexts...))...,
+						wrapChan(wm.GetSendChans(nexts...))...,
 					)
 				})
 			}
@@ -179,13 +178,10 @@ func wrapWork(ctx context.Context, before []StepCallback, work Work, after []Ste
 	}
 }
 
-func wrapChan(start func() error, chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
+func wrapChan(chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
 	for _, ch := range chs {
 		ch := ch
-		recvs = append(recvs, func(target WorkTarget) {
-			_ = start()
-			ch <- target
-		})
+		recvs = append(recvs, func(target WorkTarget) { ch <- target })
 	}
 	return recvs
 }
@@ -231,18 +227,11 @@ func (wm *WorkerManager) Serve(steps ...WorkStep) {
 
 // Recv recv func
 func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
-	ch := wm.GetSendChan(step)
-	if ch == nil {
-		return fmt.Errorf("%s channel not found", step)
+	if ch := wm.GetSendChan(step); ch != nil {
+		ch <- target
+		return nil
 	}
-
-	if err := wm.TaskStart(target.Token()); err != nil {
-		return fmt.Errorf("start task fail: %w", err)
-	}
-
-	ch <- target
-
-	return nil
+	return fmt.Errorf("%s channel not found", step)
 }
 
 // RecvFrom recv from chan
