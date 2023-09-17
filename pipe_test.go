@@ -14,7 +14,7 @@ func TestPipeController_recver(t *testing.T) {
 	mgr.RegisterWorker(DummyWorkerB, DummyBuilder)
 
 	mgr.RegisterStep(StepA, DummyStepRunner, StepB)
-	mgr.RegisterStep(StepB, TransferRunner(func(ctx context.Context, target WorkTarget) {
+	mgr.RegisterStep(StepB, TransferRunner(func(_ context.Context, target WorkTarget) {
 		fmt.Printf("%s got target %+v, transfering...", StepB, target)
 	}))
 
@@ -40,7 +40,7 @@ func TestPipeController_recver(t *testing.T) {
 func TestPipeController_mitm(t *testing.T) {
 	mgr := NewPipeController(nil, StepA, StepB)
 
-	// read
+	// read all data for step A and print to check mitm works or not
 	recv := mgr.GetRecvChan(StepA)
 	go func() {
 		for {
@@ -56,6 +56,8 @@ func TestPipeController_mitm(t *testing.T) {
 	newSendChan := make(chan WorkTarget, 256)
 	// send := mgr.GetSendChan(StepA)
 	// mgr.SetSendChan(StepA, newSendChan)
+
+	// return origin send ch
 	send := mgr.MITMSendChan(StepA, newSendChan)
 
 	mgr.GetSendChan(StepA) <- &DummyTestTarget{DummyTarget: DummyTarget{TaskToken: "Raw Target 2"}, Step: StepA}
@@ -63,7 +65,7 @@ func TestPipeController_mitm(t *testing.T) {
 	select {
 	case data := <-newSendChan:
 		data.(*DummyTestTarget).DummyTarget.TaskToken = "Converted Target"
-		send <- data
+		send <- data // send data to origin ch after processed
 	}
 
 	time.Sleep(time.Second)
