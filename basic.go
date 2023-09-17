@@ -35,11 +35,8 @@ type WorkerConfig interface {
 type WorkTarget interface {
 	// Token return target belong to which task
 	Token() string
-
 	// Key return target unique key
 	Key() string
-	// TTL return target time to live
-	TTL() int
 }
 
 // WorkTask work task
