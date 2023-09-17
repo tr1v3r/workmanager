@@ -14,8 +14,8 @@ const (
 	limitStepC WorkStep = "limit_stepC"
 )
 
-func Test_limitManager(t *testing.T) {
-	limitMgr := NewLimitManager(context.Background(), limitStepA, limitStepB)
+func Test_limitController(t *testing.T) {
+	limitMgr := NewLimitController(context.Background(), limitStepA, limitStepB)
 
 	steps := limitMgr.limitSteps()
 	if len(steps) != 2 || !ContainsStep(limitStepA, steps...) || !ContainsStep(limitStepB, steps...) {

@@ -12,8 +12,8 @@ const (
 	poolStepC WorkStep = "pool_stepC"
 )
 
-func Test_poolManager(t *testing.T) {
-	poolMgr := NewPoolManager(context.Background(), poolStepA, poolStepB)
+func Test_poolController(t *testing.T) {
+	poolMgr := NewPoolController(context.Background(), poolStepA, poolStepB)
 
 	steps := poolMgr.poolSteps()
 	if len(steps) != 2 || !ContainsStep(poolStepA, steps...) || !ContainsStep(poolStepB, steps...) {

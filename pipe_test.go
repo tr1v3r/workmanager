@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestPipeManager_recver(t *testing.T) {
+func TestPipeController_recver(t *testing.T) {
 	mgr := NewWorkerManager(context.Background())
 
 	mgr.RegisterWorker(DummyWorkerA, DummyBuilder)
@@ -37,8 +37,8 @@ func TestPipeManager_recver(t *testing.T) {
 	t.Logf("got task: { token: %s, finished: %t }\n", resultTask.TaskToken, resultTask.Finished)
 }
 
-func TestPipeManager_mitm(t *testing.T) {
-	mgr := NewPipeManager(nil, StepA, StepB)
+func TestPipeController_mitm(t *testing.T) {
+	mgr := NewPipeController(nil, StepA, StepB)
 
 	// read
 	recv := mgr.GetRecvChan(StepA)

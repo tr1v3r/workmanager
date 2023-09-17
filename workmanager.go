@@ -20,11 +20,11 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 	return &WorkerManager{
 		ctx: ctx,
 
-		taskManager:     NewTaskManager(ctx),
-		pipeManager:     NewPipeManager(ctx),
-		poolManager:     NewPoolManager(ctx),
-		limitManager:    NewLimitManager(ctx),
-		callbackManager: newCallbackManager(),
+		taskController:     NewTaskController(ctx),
+		pipeController:     NewPipeController(ctx),
+		poolController:     NewPoolController(ctx),
+		limitController:    NewLimitController(ctx),
+		callbackController: newCallbackController(),
 
 		mu:             new(sync.RWMutex),
 		workerBuilders: make(map[WorkerName]WorkerBuilder, 8),
@@ -38,11 +38,11 @@ type WorkerManager struct {
 
 	cacher Cacher
 
-	*taskManager
-	*pipeManager
-	*poolManager
-	*limitManager
-	*callbackManager
+	*taskController
+	*pipeController
+	*poolController
+	*limitController
+	*callbackController
 
 	mu             *sync.RWMutex
 	workerBuilders map[WorkerName]WorkerBuilder
@@ -52,7 +52,7 @@ type WorkerManager struct {
 // WithContext set context
 func (wm WorkerManager) WithContext(ctx context.Context) *WorkerManager {
 	wm.ctx = ctx
-	wm.taskManager = wm.taskManager.WithContext(ctx)
+	wm.taskController = wm.taskController.WithContext(ctx)
 	return &wm
 }
 

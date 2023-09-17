@@ -4,61 +4,61 @@ import (
 	"sync"
 )
 
-func newCallbackManager() *callbackManager {
-	return &callbackManager{
-		callbacks: make(map[WorkStep]*callbackController),
+func newCallbackController() *callbackController {
+	return &callbackController{
+		callbacks: make(map[WorkStep]*callbacks),
 	}
 }
 
-type callbackManager struct {
+type callbackController struct {
 	mu        sync.RWMutex
-	callbacks map[WorkStep]*callbackController
+	callbacks map[WorkStep]*callbacks
 }
 
-func (m *callbackManager) GetCallbacks(step WorkStep) *callbackController {
-	ctr := m.getCallbackCtr(step)
-	if ctr == nil {
-		ctr = new(callbackController)
-		m.setCallbackCtr(step, ctr)
+func (m *callbackController) GetCallbacks(step WorkStep) *callbacks {
+	callback := m.getCallback(step)
+	if callback == nil {
+		callback = new(callbacks)
+		m.setCallback(step, callback)
 	}
-	return ctr
+	return callback
 }
 
-func (m *callbackManager) getCallbackCtr(step WorkStep) *callbackController {
+func (m *callbackController) getCallback(step WorkStep) *callbacks {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.callbacks[step]
 }
 
-func (m *callbackManager) setCallbackCtr(step WorkStep, ctr *callbackController) {
+func (m *callbackController) setCallback(step WorkStep, ctr *callbacks) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.callbacks[step] = ctr
 }
 
-type callbackController struct {
+type callbacks struct {
 	mu     sync.RWMutex
 	before []StepCallback
 	after  []StepCallback
 }
 
-func (t *callbackController) RegisterBefore(calls ...StepCallback) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.before = append(t.before, calls...)
+func (c *callbacks) RegisterBefore(calls ...StepCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.before = append(c.before, calls...)
 }
-func (t *callbackController) RegisterAfter(calls ...StepCallback) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.after = append(t.after, calls...)
+func (c *callbacks) RegisterAfter(calls ...StepCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.after = append(c.after, calls...)
 }
-func (t *callbackController) BeforeWork() []StepCallback {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-	return t.before
+func (c *callbacks) BeforeWork() []StepCallback {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.before
 }
-func (t *callbackController) AfterWork() []StepCallback {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-	return t.after
+func (c *callbacks) AfterWork() []StepCallback {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.after
 }
