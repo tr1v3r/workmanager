@@ -15,15 +15,8 @@ var _ Worker = new(DummyWorker)
 // DummyWorker dummy worker
 type DummyWorker struct{}
 
-func (c *DummyWorker) LoadConfig(WorkerConfig) Worker        { return c }
-func (c *DummyWorker) WithContext(context.Context) Worker    { return c }
-func (c *DummyWorker) GetContext() context.Context           { return context.TODO() }
-func (c *DummyWorker) BeforeWork()                           {}
-func (c *DummyWorker) Work(WorkTarget) ([]WorkTarget, error) { return nil, nil }
-func (c *DummyWorker) AfterWork()                            {}
-func (c *DummyWorker) GetResult() WorkTarget                 { return nil }
-func (c *DummyWorker) Finished() <-chan struct{}             { return nil }
-func (c *DummyWorker) Terminate() error                      { return nil }
+func (c *DummyWorker) WithContext(context.Context) Worker       { return c }
+func (c *DummyWorker) Work(...WorkTarget) ([]WorkTarget, error) { return nil, nil }
 
 // DummyTarget dummy target
 type DummyTarget struct{ TaskToken string }

@@ -73,8 +73,11 @@ type DummyTestWorker struct {
 	Name WorkerName
 }
 
-func (w *DummyTestWorker) Work(target WorkTarget) ([]WorkTarget, error) {
-	_ = target.(*DummyTestTarget)
+func (w *DummyTestWorker) Work(targets ...WorkTarget) ([]WorkTarget, error) {
+	if len(targets) == 0 {
+		return nil, nil
+	}
+	var target *DummyTestTarget
 	switch w.Name {
 	case DummyWorkerA:
 		target = &DummyTestTarget{Step: StepB}
@@ -83,7 +86,7 @@ func (w *DummyTestWorker) Work(target WorkTarget) ([]WorkTarget, error) {
 	}
 	return []WorkTarget{target}, nil
 }
-func (w *DummyTestWorker) Finished() <-chan struct{} { return w.Finish }
+func (w *DummyTestWorker) Done() <-chan struct{} { return w.Finish }
 
 type DummyTestTarget struct {
 	DummyTarget

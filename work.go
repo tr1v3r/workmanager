@@ -1,6 +1,7 @@
 package workmanager
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/tr1v3r/pkg/log"
@@ -8,10 +9,12 @@ import (
 )
 
 // Work workmangager's work
+// target: work target
+// config: workers' config, key is worker's name, value is worker's config, build a new worker when config is not nil and active
 func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error) {
 	task := wm.GetTask(target.Token())
 	if task == nil {
-		log.Warn("no such task token %s", target.Token())
+		log.Warn("task not found: token %s", target.Token())
 		return
 	}
 
@@ -24,37 +27,44 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 	pool := pools.NewPool(defaultPoolSize)
 	defer pool.WaitAll()
 
+	// build workers and work 1 by 1
 	for name, conf := range configs {
 		if conf == nil || !conf.Active() {
 			continue
 		}
 
+		// check gorountine pool and wm's context
 		select {
 		case <-pool.AsyncWait():
 		case <-wm.ctx.Done():
-			return
+			return // stop Work when wm's context done
 		}
+
+		// build worker and work
 		go func(name WorkerName, c WorkerConfig) {
 			defer pool.Done()
 
-			builder, ok := wm.workerBuilders[name]
+			build, ok := wm.workerBuilders[name]
 			if !ok {
-				log.Error("no such worker builder: %s", name)
+				log.Error("worker builder not found: %s", name)
 				return
 			}
 
-			worker := builder(task.Context(), c.Args())
+			// build worker with wm's context and config args
+			worker := build(task.Context(), c.Args())
 			if worker == nil {
-				log.Error("worker builder return nil")
+				log.Error("bulid worker fail: build %s got nil", name)
 				return
 			}
 
+			// work
 			res, err := wm.work(worker, target)
 			if err != nil {
-				log.Warn("worker meets error: %s", err)
+				log.Warn("%s work fail: %s", name, err)
 				return
 			}
 			if res == nil {
+				log.Debug("%s work on %s got nil result", name, target.Key())
 				return
 			}
 			mu.Lock()
@@ -69,15 +79,10 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res []WorkTarget, err error) {
 	defer catchPanic("work panic")
 
-	worker.BeforeWork()
+	// call worker's Work
 	res, err = worker.Work(arg)
-	worker.AfterWork()
-
-	select {
-	case <-worker.GetContext().Done():
-		_ = worker.Terminate()
-	case <-worker.Finished():
+	if err != nil {
+		return nil, fmt.Errorf("work fail: %w", err)
 	}
-
-	return
+	return res, nil
 }

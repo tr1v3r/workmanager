@@ -12,18 +12,11 @@ type WorkStep string
 
 // Worker a worker
 type Worker interface {
-	LoadConfig(WorkerConfig) Worker
+	// WithContext set worker context
 	WithContext(context.Context) Worker
-	GetContext() context.Context
 
-	BeforeWork()
-	Work(arg WorkTarget) ([]WorkTarget, error)
-	AfterWork()
-
-	GetResult() WorkTarget
-	Finished() <-chan struct{}
-
-	Terminate() error
+	// Work worker do work
+	Work(targets ...WorkTarget) (results []WorkTarget, err error)
 }
 
 // Cacher work target cache

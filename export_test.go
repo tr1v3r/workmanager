@@ -68,19 +68,22 @@ type Printer struct {
 	wm.DummyWorker
 }
 
-func (p *Printer) Work(target wm.WorkTarget) ([]wm.WorkTarget, error) {
+func (p *Printer) Work(targets ...wm.WorkTarget) (results []wm.WorkTarget, err error) {
 	p.counter++
 
 	log.Info("[%d] printer working", p.counter)
-	if t, ok := target.(*wm.DummyTestTarget); ok {
-		// t := *t
-		// t.Remark += fmt.Sprintf("<%d>", p.counter)
-		t.Count++
-		return []wm.WorkTarget{t}, nil
+	for _, target := range targets {
+		if t, ok := target.(*wm.DummyTestTarget); ok {
+			// t := *t
+			// t.Remark += fmt.Sprintf("<%d>", p.counter)
+			t.Count++
+			results = append(results, t)
+			return
+		}
 	}
-	return nil, nil
+	return
 }
-func (p *Printer) Finished() <-chan struct{} {
+func (p *Printer) Done() <-chan struct{} {
 	ch := make(chan struct{})
 	close(ch)
 	return ch
