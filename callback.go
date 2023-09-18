@@ -5,9 +5,7 @@ import (
 )
 
 func newCallbackController() *callbackController {
-	return &callbackController{
-		callbacks: make(map[WorkStep]*callbacks),
-	}
+	return &callbackController{callbacks: make(map[WorkStep]*callbacks)}
 }
 
 type callbackController struct {
@@ -15,25 +13,33 @@ type callbackController struct {
 	callbacks map[WorkStep]*callbacks
 }
 
-func (m *callbackController) GetCallbacks(step WorkStep) *callbacks {
-	callback := m.getCallback(step)
-	if callback == nil {
-		callback = new(callbacks)
-		m.setCallback(step, callback)
+// GetCallbacks query specified step's callbacks, if not found, build a new one and return it
+func (ctr *callbackController) GetCallbacks(step WorkStep) *callbacks {
+	c := ctr.getCallbacks(step)
+	if c == nil {
+		c = new(callbacks)
+		ctr.setCallback(step, c)
 	}
-	return callback
+	return c
 }
 
-func (m *callbackController) getCallback(step WorkStep) *callbacks {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.callbacks[step]
+func (ctr *callbackController) CallbackStatus(step WorkStep) (beforeHookCount, afterHookCount int) {
+	if callbacks := ctr.getCallbacks(step); callbacks == nil {
+		return callbacks.Status()
+	}
+	return
 }
 
-func (m *callbackController) setCallback(step WorkStep, ctr *callbacks) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.callbacks[step] = ctr
+func (ctr *callbackController) getCallbacks(step WorkStep) *callbacks {
+	ctr.mu.RLock()
+	defer ctr.mu.RUnlock()
+	return ctr.callbacks[step]
+}
+
+func (ctr *callbackController) setCallback(step WorkStep, callbacks *callbacks) {
+	ctr.mu.Lock()
+	defer ctr.mu.Unlock()
+	ctr.callbacks[step] = callbacks
 }
 
 type callbacks struct {
@@ -61,4 +67,9 @@ func (c *callbacks) AfterWork() []StepCallback {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.after
+}
+func (c *callbacks) Status() (beforeHookCount, afterHookCount int) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.before), len(c.after)
 }

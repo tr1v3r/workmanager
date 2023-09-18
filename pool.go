@@ -31,23 +31,6 @@ type poolController struct {
 	defaultPool pools.Pool
 }
 
-// poolSteps return all step has pool
-func (p *poolController) poolSteps() (steps []WorkStep) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	for step := range p.poolMap {
-		steps = append(steps, step)
-	}
-	return
-}
-
-// getDefaultPool get default pool
-func (p *poolController) getDefaultPool() pools.Pool {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	return p.defaultPool
-}
-
 // SetDefaultPool set default pool
 func (p *poolController) SetDefaultPool(size int) {
 	pool := pools.NewPool(size)
@@ -62,9 +45,8 @@ func (p *poolController) getPool(step WorkStep) pools.Pool {
 	defer p.mu.RUnlock()
 	if pool, ok := p.poolMap[step]; ok {
 		return pool
-	} else {
-		return p.defaultPool
 	}
+	return p.defaultPool
 }
 
 func (p *poolController) SetPool(size int, steps ...WorkStep) {
@@ -94,5 +76,8 @@ func (p *poolController) RemovePool(steps ...WorkStep) {
 func (p *poolController) PoolStatus(step WorkStep) (num, size int) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	return p.poolMap[step].Num(), p.poolMap[step].Size()
+	if pool, ok := p.poolMap[step]; ok { // if has step pool
+		return pool.Num(), pool.Size()
+	}
+	return 0, 0
 }
