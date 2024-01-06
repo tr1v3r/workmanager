@@ -1,3 +1,10 @@
+// Package workmanager provides a workmanager to manage all works in your need
+// WorkTarget is first class
+//  1. handle target step by step
+//  2. call any number workers in one step
+//  3. target can chose next step
+//  4. target can set tiem interval
+//  5. target can be count
 package workmanager
 
 import (
@@ -7,16 +14,16 @@ import (
 )
 
 type (
-	// Work ...
+	// Work actually work func
 	Work func(target WorkTarget, configs map[WorkerName]WorkerConfig) (results []WorkTarget, err error)
 
-	// WorkerBuilder ...
-	WorkerBuilder func(ctx context.Context, args map[string]interface{}) Worker
+	// WorkerBuilder worker builder, return worker
+	WorkerBuilder func(ctx context.Context, args map[string]any) Worker
 
-	// StepRunner ...
+	// StepRunner runner for each step
 	StepRunner func(ctx context.Context, work Work, workTarget WorkTarget, nexts ...func(WorkTarget))
 
-	// StepCallback ...
+	// StepCallback callback to handle result
 	StepCallback func(ctx context.Context, results ...WorkTarget) []WorkTarget
 )
 
@@ -79,7 +86,7 @@ func SetCacher(c Cacher) { defaultWorkerMgr.SetCacher(c) }
 // ListStep list all steps
 func ListStep() []WorkStep { return defaultWorkerMgr.ListStep() }
 
-// PoolStastus return pool status
+// PoolStatus return pool status
 func PoolStatus(step WorkStep) (num, size int) { return defaultWorkerMgr.PoolStatus(step) }
 
 // SetPool set pool size
@@ -88,9 +95,9 @@ func SetPool(size int, steps ...WorkStep) { defaultWorkerMgr.SetPool(size, steps
 // SetDefaultPool set default pool
 func SetDefaultPool(size int) { defaultWorkerMgr.SetDefaultPool(size) }
 
-// SetLimiter set limiter
-func SetLimiter(rate rate.Limit, burst int, steps ...WorkStep) {
-	defaultWorkerMgr.SetLimiter(rate, burst, steps...)
+// SetLimit set limit
+func SetLimit(rate rate.Limit, burst int, steps ...WorkStep) {
+	defaultWorkerMgr.SetLimit(rate, burst, steps...)
 }
 
 // SetDefaultLimiter set default limiter
@@ -106,8 +113,11 @@ func AddTask(task WorkTask) { defaultWorkerMgr.AddTask(task) }
 // GetTask ...
 func GetTask(token string) WorkTask { return defaultWorkerMgr.GetTask(token) }
 
-// CancelTask ...
+// CancelTask cancel task
 func CancelTask(token string) error { return defaultWorkerMgr.CancelTask(token) }
+
+// FinishTask finish task
+func FinishTask(token string) error { return defaultWorkerMgr.FinishTask(token) }
 
 // ================================================
 // ================ Pipe Operation ================
@@ -126,5 +136,5 @@ func MITMSendChan(step WorkStep, newSendCh chan<- WorkTarget) (oldSendCh chan<- 
 	return defaultWorkerMgr.MITMSendChan(step, newSendCh)
 }
 
-// SetPipe ...
+// SetPipe set step's pipe
 func SetPipe(step WorkStep, opts ...PipeOption) { defaultWorkerMgr.SetPipe(step, opts...) }

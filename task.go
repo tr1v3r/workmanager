@@ -3,7 +3,6 @@ package workmanager
 import (
 	"context"
 	"errors"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,11 +31,8 @@ type Task struct {
 
 	CancelFunc context.CancelFunc
 
-	FinishFunc func()
+	FinishFunc func() error
 	Finished   bool
-
-	startCount int64
-	doneCount  int64
 }
 
 // Token return task token
@@ -44,34 +40,6 @@ func (t *Task) Token() string { return t.TaskToken }
 
 // Context return context
 func (t *Task) Context() context.Context { return t.Ctx }
-
-// Start task start
-func (t *Task) Start() error { return t.StartN(1) }
-
-// StartN task start n
-func (t *Task) StartN(n int64) error {
-	if t == nil {
-		return ErrNilTask
-	}
-	atomic.AddInt64(&t.startCount, n)
-	return nil
-} // nolint
-
-// Done task done count
-func (t *Task) Done() error {
-	if t == nil {
-		return ErrNilTask
-	}
-	defer atomic.AddInt64(&t.doneCount, 1)
-	if atomic.LoadInt64(&t.startCount) == atomic.LoadInt64(&t.doneCount)+1 {
-		t.Finished = true
-		t.EndTime = time.Now()
-		if t.FinishFunc != nil {
-			t.FinishFunc()
-		}
-	}
-	return nil
-}
 
 // Cancel task cancel
 func (t *Task) Cancel() error {
@@ -84,8 +52,20 @@ func (t *Task) Cancel() error {
 	return nil
 }
 
-// IsCanceled ...
+// Finish mark task finished
+func (t *Task) Finish() error {
+	if t == nil {
+		return ErrNilTask
+	}
+	if t.FinishFunc != nil {
+		return t.FinishFunc()
+	}
+	t.Finished = true
+	return nil
+}
+
+// IsCanceled check if task canceled
 func (t *Task) IsCanceled() bool { return t == nil || errors.Is(t.Ctx.Err(), context.Canceled) }
 
-// IsFinished ...
+// IsFinished check if task finished
 func (t *Task) IsFinished() bool { return t == nil || t.Finished }

@@ -7,21 +7,23 @@ import (
 	"time"
 )
 
-func TestPipeManager_recver(t *testing.T) {
-	mgr := NewWorkerManager(context.Background())
-
-	mgr.RegisterWorker(DummyWorkerA, DummyBuilder)
-	mgr.RegisterWorker(DummyWorkerB, DummyBuilder)
-
-	mgr.RegisterStep(StepA, DummyStepRunner, StepB)
-	mgr.RegisterStep(StepB, TransferRunner(func(ctx context.Context, target WorkTarget) {
-		fmt.Printf("%s got target %+v, transfering...", StepB, target)
-	}))
-
-	mgr.Serve()
-
+func TestPipeController_recver(t *testing.T) {
 	task := NewTask(context.Background())
 	task.(*Task).TaskToken = "example_token_123"
+
+	mgr := NewWorkerManager(context.Background())
+
+	mgr.RegisterWorker(DummyWorkerA, DummyBuilder(DummyWorkerA))
+	mgr.RegisterWorker(DummyWorkerB, DummyBuilder(DummyWorkerB))
+
+	mgr.RegisterStep(StepA, DummyStepRunner, StepB)
+	mgr.RegisterStep(StepB, TransferRunner(func(_ context.Context, target WorkTarget) {
+		fmt.Printf("%s got target %+v, transfering...\n", StepB, target)
+		task.Finish()
+	}))
+
+	mgr.Serve(StepA, StepB)
+
 	mgr.AddTask(task)
 
 	err := mgr.Recv(StepA, &DummyTestTarget{DummyTarget: DummyTarget{TaskToken: task.Token()}, Step: StepA})
@@ -37,10 +39,10 @@ func TestPipeManager_recver(t *testing.T) {
 	t.Logf("got task: { token: %s, finished: %t }\n", resultTask.TaskToken, resultTask.Finished)
 }
 
-func TestPipeManager_mitm(t *testing.T) {
-	mgr := NewPipeManager(nil, StepA, StepB)
+func TestPipeController_mitm(t *testing.T) {
+	mgr := NewPipeController(nil, StepA, StepB)
 
-	// read
+	// read all data for step A and print to check mitm works or not
 	recv := mgr.GetRecvChan(StepA)
 	go func() {
 		for {
@@ -56,6 +58,8 @@ func TestPipeManager_mitm(t *testing.T) {
 	newSendChan := make(chan WorkTarget, 256)
 	// send := mgr.GetSendChan(StepA)
 	// mgr.SetSendChan(StepA, newSendChan)
+
+	// return origin send ch
 	send := mgr.MITMSendChan(StepA, newSendChan)
 
 	mgr.GetSendChan(StepA) <- &DummyTestTarget{DummyTarget: DummyTarget{TaskToken: "Raw Target 2"}, Step: StepA}
@@ -63,7 +67,7 @@ func TestPipeManager_mitm(t *testing.T) {
 	select {
 	case data := <-newSendChan:
 		data.(*DummyTestTarget).DummyTarget.TaskToken = "Converted Target"
-		send <- data
+		send <- data // send data to origin ch after processed
 	}
 
 	time.Sleep(time.Second)

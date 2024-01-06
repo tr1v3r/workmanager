@@ -12,37 +12,36 @@ const (
 	poolStepC WorkStep = "pool_stepC"
 )
 
-func Test_poolManager(t *testing.T) {
-	poolMgr := NewPoolManager(context.Background(), poolStepA, poolStepB)
+func Test_poolController(t *testing.T) {
+	poolCtr := NewPoolController(context.Background(), poolStepA, poolStepB)
 
-	steps := poolMgr.poolSteps()
-	if len(steps) != 2 || !ContainsStep(poolStepA, steps...) || !ContainsStep(poolStepB, steps...) {
+	if steps := poolCtr.poolSteps(); len(steps) != 2 || !ContainsStep(poolStepA, steps...) || !ContainsStep(poolStepB, steps...) {
 		t.Errorf("pool manager init fail: expect steps: %+v, got: %+v", []WorkStep{poolStepA, poolStepB}, steps)
 	}
 	t.Log("init ok")
 
-	if poolMgr.getPool(poolStepA).Size() != defaultPoolSize || poolMgr.getPool(poolStepB).Size() != defaultPoolSize {
-		t.Errorf("pool size error: expect %d, got: %d", defaultPoolSize, poolMgr.getPool(poolStepA).Size())
+	if poolCtr.getPool(poolStepA).Size() != defaultPoolSize || poolCtr.getPool(poolStepB).Size() != defaultPoolSize {
+		t.Errorf("pool size error: expect %d, got: %d", defaultPoolSize, poolCtr.getPool(poolStepA).Size())
 	}
 	t.Log("pool size ok")
 
 	newSize := 99
-	poolMgr.SetPool(newSize, poolStepA, poolStepC)
-	if poolMgr.getPool(poolStepA).Size() != newSize ||
-		poolMgr.getPool(poolStepB).Size() != defaultPoolSize ||
-		poolMgr.getPool(poolStepC).Size() != newSize {
+	poolCtr.SetPool(newSize, poolStepA, poolStepC)
+	if poolCtr.getPool(poolStepA).Size() != newSize ||
+		poolCtr.getPool(poolStepB).Size() != defaultPoolSize ||
+		poolCtr.getPool(poolStepC).Size() != newSize {
 		t.Errorf("set pool size fail: expect %d, got %s:%d\t%s:%d\t%s:%d",
 			newSize,
-			poolStepA, poolMgr.getPool(poolStepA).Size(),
-			poolStepB, poolMgr.getPool(poolStepB).Size(),
-			poolStepC, poolMgr.getPool(poolStepC).Size(),
+			poolStepA, poolCtr.getPool(poolStepA).Size(),
+			poolStepB, poolCtr.getPool(poolStepB).Size(),
+			poolStepC, poolCtr.getPool(poolStepC).Size(),
 		)
 	}
 	t.Log("set pool ok")
 
 	for _, step := range []WorkStep{poolStepA, poolStepB, poolStepC} {
 		dataCh := make(chan struct{}, 999)
-		pool := poolMgr.getPool(step)
+		pool := poolCtr.getPool(step)
 
 		var timeup bool
 		for tick := time.Tick(100 * time.Millisecond); !timeup; {
@@ -65,9 +64,9 @@ func Test_poolManager(t *testing.T) {
 	}
 	t.Log("pool works ok")
 
-	poolMgr.RemovePool(poolStepA)
-	if poolMgr.getPool(poolStepA) != poolMgr.defaultPool {
-		t.Errorf("delete step fail: delete poolStepA, got: %+v", poolMgr.poolSteps())
+	poolCtr.RemovePool(poolStepA)
+	if poolCtr.getPool(poolStepA) != poolCtr.defaultPool {
+		t.Errorf("delete step fail: delete poolStepA, got: %+v", poolCtr.poolSteps())
 	}
 	t.Log("delete pool ok")
 }

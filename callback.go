@@ -4,61 +4,72 @@ import (
 	"sync"
 )
 
-func newCallbackManager() *callbackManager {
-	return &callbackManager{
-		callbacks: make(map[WorkStep]*callbackController),
-	}
-}
-
-type callbackManager struct {
-	mu        sync.RWMutex
-	callbacks map[WorkStep]*callbackController
-}
-
-func (m *callbackManager) GetCallbacks(step WorkStep) *callbackController {
-	ctr := m.getCallbackCtr(step)
-	if ctr == nil {
-		ctr = new(callbackController)
-		m.setCallbackCtr(step, ctr)
-	}
-	return ctr
-}
-
-func (m *callbackManager) getCallbackCtr(step WorkStep) *callbackController {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.callbacks[step]
-}
-
-func (m *callbackManager) setCallbackCtr(step WorkStep, ctr *callbackController) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.callbacks[step] = ctr
+func newCallbackController() *callbackController {
+	return &callbackController{callbacks: make(map[WorkStep]*callbacks)}
 }
 
 type callbackController struct {
+	mu        sync.RWMutex
+	callbacks map[WorkStep]*callbacks
+}
+
+// GetCallbacks query specified step's callbacks, if not found, build a new one and return it
+func (ctr *callbackController) GetCallbacks(step WorkStep) *callbacks {
+	c := ctr.getCallbacks(step)
+	if c == nil {
+		c = new(callbacks)
+		ctr.setCallback(step, c)
+	}
+	return c
+}
+
+func (ctr *callbackController) CallbackStatus(step WorkStep) (beforeHookCount, afterHookCount int) {
+	if callbacks := ctr.getCallbacks(step); callbacks == nil {
+		return callbacks.Status()
+	}
+	return
+}
+
+func (ctr *callbackController) getCallbacks(step WorkStep) *callbacks {
+	ctr.mu.RLock()
+	defer ctr.mu.RUnlock()
+	return ctr.callbacks[step]
+}
+
+func (ctr *callbackController) setCallback(step WorkStep, callbacks *callbacks) {
+	ctr.mu.Lock()
+	defer ctr.mu.Unlock()
+	ctr.callbacks[step] = callbacks
+}
+
+type callbacks struct {
 	mu     sync.RWMutex
 	before []StepCallback
 	after  []StepCallback
 }
 
-func (t *callbackController) RegisterBefore(calls ...StepCallback) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.before = append(t.before, calls...)
+func (c *callbacks) RegisterBefore(calls ...StepCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.before = append(c.before, calls...)
 }
-func (t *callbackController) RegisterAfter(calls ...StepCallback) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.after = append(t.after, calls...)
+func (c *callbacks) RegisterAfter(calls ...StepCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.after = append(c.after, calls...)
 }
-func (t *callbackController) BeforeWork() []StepCallback {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-	return t.before
+func (c *callbacks) BeforeWork() []StepCallback {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.before
 }
-func (t *callbackController) AfterWork() []StepCallback {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-	return t.after
+func (c *callbacks) AfterWork() []StepCallback {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.after
+}
+func (c *callbacks) Status() (beforeHookCount, afterHookCount int) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.before), len(c.after)
 }

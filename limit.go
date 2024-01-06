@@ -8,36 +8,32 @@ import (
 	"golang.org/x/time/rate"
 )
 
-const defaultBurst = 100
-const defaultStepLimit rate.Limit = 100
+const (
+	defaultBurst            = 100
+	defaultLimit rate.Limit = 100
+)
 
-func NewLimitManager(_ context.Context, steps ...WorkStep) (mgr *limitManager) {
+// NewLimitController create new limit controller
+func NewLimitController(_ context.Context, steps ...WorkStep) (mgr *limitController) {
 	defer func() {
 		for _, step := range steps {
-			mgr.limiterMap[step] = rate.NewLimiter(defaultStepLimit, defaultBurst)
+			mgr.limiterMap[step] = rate.NewLimiter(defaultLimit, defaultBurst)
 		}
 	}()
-	return &limitManager{
+	return &limitController{
 		limiterMap:     make(map[WorkStep]*rate.Limiter),
-		defaultLimiter: rate.NewLimiter(rate.Limit(runtime.NumCPU())*defaultStepLimit, defaultBurst),
+		defaultLimiter: rate.NewLimiter(rate.Limit(runtime.NumCPU())*defaultLimit, defaultBurst),
 	}
 }
 
-type limitManager struct {
+type limitController struct {
 	mu             sync.RWMutex
 	limiterMap     map[WorkStep]*rate.Limiter
 	defaultLimiter *rate.Limiter
 }
 
-// getDefaultLimiter get global limiter
-func (l *limitManager) getDefaultLimiter() *rate.Limiter {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	return l.defaultLimiter
-}
-
 // SetDefaultLimiter set global limiter
-func (l *limitManager) SetDefaultLimiter(r rate.Limit, b int) {
+func (l *limitController) SetDefaultLimiter(r rate.Limit, b int) {
 	limiter := rate.NewLimiter(r, b)
 
 	l.mu.Lock()
@@ -46,7 +42,7 @@ func (l *limitManager) SetDefaultLimiter(r rate.Limit, b int) {
 }
 
 // getLimiter get limiter for step
-func (l *limitManager) getLimiter(step WorkStep) *rate.Limiter {
+func (l *limitController) getLimiter(step WorkStep) *rate.Limiter {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	if limiter, ok := l.limiterMap[step]; ok {
@@ -56,12 +52,13 @@ func (l *limitManager) getLimiter(step WorkStep) *rate.Limiter {
 	}
 }
 
-func (l *limitManager) SetLimiter(r rate.Limit, b int, steps ...WorkStep) {
+func (l *limitController) SetLimit(r rate.Limit, b int, steps ...WorkStep) {
 	if len(steps) == 0 {
 		return
 	}
+
 	if r < 0 {
-		r = defaultStepLimit
+		r = defaultLimit
 	}
 	if b < 0 {
 		b = defaultBurst
@@ -78,7 +75,7 @@ func (l *limitManager) SetLimiter(r rate.Limit, b int, steps ...WorkStep) {
 		}
 	}
 }
-func (l *limitManager) DelLimiter(steps ...WorkStep) {
+func (l *limitController) DelLimiter(steps ...WorkStep) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	for _, step := range steps {
@@ -86,11 +83,18 @@ func (l *limitManager) DelLimiter(steps ...WorkStep) {
 	}
 }
 
-func (l *limitManager) limitSteps() (steps []WorkStep) {
+func (l *limitController) LimiterStatus(step WorkStep) (limit rate.Limit, burst int, tokens float64) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	limiter := l.getLimiter(step)
+	return limiter.Limit(), limiter.Burst(), limiter.Tokens()
+}
+
+func (l *limitController) limitSteps() (steps []WorkStep) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	for step := range l.limiterMap {
 		steps = append(steps, step)
 	}
-	return
+	return steps
 }

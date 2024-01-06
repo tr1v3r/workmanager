@@ -12,44 +12,27 @@ const flex = 1
 
 var defaultPoolSize = runtime.NumCPU() * flex
 
-// NewPoolManager ...
-func NewPoolManager(_ context.Context, steps ...WorkStep) (mgr *poolManager) { // nolint
+// NewPoolController ...
+func NewPoolController(_ context.Context, steps ...WorkStep) (mgr *poolController) { // nolint
 	defer func() {
 		for _, step := range steps {
 			mgr.poolMap[step] = pools.NewPool(defaultPoolSize)
 		}
 	}()
-	return &poolManager{
+	return &poolController{
 		poolMap:     make(map[WorkStep]pools.Pool),
 		defaultPool: pools.NewPool(defaultPoolSize * len(steps)),
 	}
 }
 
-type poolManager struct {
+type poolController struct {
 	mu          sync.RWMutex
 	poolMap     map[WorkStep]pools.Pool
 	defaultPool pools.Pool
 }
 
-// poolSteps return all step has pool
-func (p *poolManager) poolSteps() (steps []WorkStep) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	for step := range p.poolMap {
-		steps = append(steps, step)
-	}
-	return
-}
-
-// getDefaultPool get default pool
-func (p *poolManager) getDefaultPool() pools.Pool {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	return p.defaultPool
-}
-
 // SetDefaultPool set default pool
-func (p *poolManager) SetDefaultPool(size int) {
+func (p *poolController) SetDefaultPool(size int) {
 	pool := pools.NewPool(size)
 
 	p.mu.Lock()
@@ -57,17 +40,16 @@ func (p *poolManager) SetDefaultPool(size int) {
 	p.defaultPool = pool
 }
 
-func (p *poolManager) getPool(step WorkStep) pools.Pool {
+func (p *poolController) getPool(step WorkStep) pools.Pool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	if pool, ok := p.poolMap[step]; ok {
 		return pool
-	} else {
-		return p.defaultPool
 	}
+	return p.defaultPool
 }
 
-func (p *poolManager) SetPool(size int, steps ...WorkStep) {
+func (p *poolController) SetPool(size int, steps ...WorkStep) {
 	if len(steps) == 0 {
 		return
 	}
@@ -83,7 +65,7 @@ func (p *poolManager) SetPool(size int, steps ...WorkStep) {
 	}
 }
 
-func (p *poolManager) RemovePool(steps ...WorkStep) {
+func (p *poolController) RemovePool(steps ...WorkStep) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	for _, step := range steps {
@@ -91,8 +73,20 @@ func (p *poolManager) RemovePool(steps ...WorkStep) {
 	}
 }
 
-func (p *poolManager) PoolStatus(step WorkStep) (num, size int) {
+func (p *poolController) PoolStatus(step WorkStep) (num, size int) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	return p.poolMap[step].Num(), p.poolMap[step].Size()
+	if pool, ok := p.poolMap[step]; ok { // if has step pool
+		return pool.Num(), pool.Size()
+	}
+	return 0, 0
+}
+
+func (p *poolController) poolSteps() (steps []WorkStep) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	for step := range p.poolMap {
+		steps = append(steps, step)
+	}
+	return steps
 }
