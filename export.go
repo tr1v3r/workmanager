@@ -95,9 +95,9 @@ func SetPool(size int, steps ...WorkStep) { defaultWorkerMgr.SetPool(size, steps
 // SetDefaultPool set default pool
 func SetDefaultPool(size int) { defaultWorkerMgr.SetDefaultPool(size) }
 
-// SetLimiter set limiter
-func SetLimiter(rate rate.Limit, burst int, steps ...WorkStep) {
-	defaultWorkerMgr.SetLimiter(rate, burst, steps...)
+// SetLimit set limit
+func SetLimit(rate rate.Limit, burst int, steps ...WorkStep) {
+	defaultWorkerMgr.SetLimit(rate, burst, steps...)
 }
 
 // SetDefaultLimiter set default limiter
@@ -133,5 +133,5 @@ func MITMSendChan(step WorkStep, newSendCh chan<- WorkTarget) (oldSendCh chan<- 
 	return defaultWorkerMgr.MITMSendChan(step, newSendCh)
 }
 
-// SetPipe ...
+// SetPipe set step's pipe
 func SetPipe(step WorkStep, opts ...PipeOption) { defaultWorkerMgr.SetPipe(step, opts...) }

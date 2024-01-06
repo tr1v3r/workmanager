@@ -81,3 +81,12 @@ func (p *poolController) PoolStatus(step WorkStep) (num, size int) {
 	}
 	return 0, 0
 }
+
+func (p *poolController) poolSteps() (steps []WorkStep) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	for step := range p.poolMap {
+		steps = append(steps, step)
+	}
+	return steps
+}

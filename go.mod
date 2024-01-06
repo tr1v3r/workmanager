@@ -1,6 +1,6 @@
 module github.com/tr1v3r/workmanager
 
-go 1.20
+go 1.21
 
 require (
 	github.com/google/uuid v1.3.0

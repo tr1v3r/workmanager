@@ -173,7 +173,7 @@ func (wm *WorkerManager) InitializeStep(step WorkStep, opts ...PipeOption) {
 		wm.SetPool(0, step)
 	}
 	if wm.getLimiter(step) == wm.defaultLimiter {
-		wm.SetLimiter(0, 0, step)
+		wm.SetLimit(0, 0, step)
 	}
 	if !wm.HasPipe(step) {
 		wm.InitializePipe(step, opts...)
@@ -235,15 +235,15 @@ func (wm *WorkerManager) StepStatus(step WorkStep) (string, error) {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("step %s's status:\n", step))
 
-	same, recvLen, recvCap, sendLen, sendCap := wm.PipeStatus(step)
-	buf.WriteString(fmt.Sprintf("pipe status:\n\tmitmed: %t\n\trecv chan: [%d/%d]\n\tsend chan: [%d/%d]\n",
-		!same, recvLen, recvCap, sendLen, sendCap))
+	mitm, recvLen, recvCap, sendLen, sendCap := wm.PipeStatus(step)
+	buf.WriteString(fmt.Sprintf("pipe status:\n\tmitm: %t\n\trecv chan: [%d/%d]\n\tsend chan: [%d/%d]\n",
+		mitm, recvLen, recvCap, sendLen, sendCap))
 
 	num, size := wm.PoolStatus(step)
 	buf.WriteString(fmt.Sprintf("pool status: [%d/%d]\n", num, size))
 
 	limit, burst, tokens := wm.LimiterStatus(step)
-	buf.WriteString(fmt.Sprintf("limiter status: limit: %d, burst:%d, tokens:%d\n", limit, burst, tokens))
+	buf.WriteString(fmt.Sprintf("limiter status: limit: %f, burst:%d, tokens:%f\n", limit, burst, tokens))
 
 	before, after := wm.CallbackStatus(step)
 	buf.WriteString(fmt.Sprintf("callback status: has %d before hooks, %d after hooks\n", before, after))

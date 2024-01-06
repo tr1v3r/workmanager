@@ -52,7 +52,7 @@ func (l *limitController) getLimiter(step WorkStep) *rate.Limiter {
 	}
 }
 
-func (l *limitController) SetLimiter(r rate.Limit, b int, steps ...WorkStep) {
+func (l *limitController) SetLimit(r rate.Limit, b int, steps ...WorkStep) {
 	if len(steps) == 0 {
 		return
 	}
@@ -88,4 +88,13 @@ func (l *limitController) LimiterStatus(step WorkStep) (limit rate.Limit, burst 
 	defer l.mu.RUnlock()
 	limiter := l.getLimiter(step)
 	return limiter.Limit(), limiter.Burst(), limiter.Tokens()
+}
+
+func (l *limitController) limitSteps() (steps []WorkStep) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	for step := range l.limiterMap {
+		steps = append(steps, step)
+	}
+	return steps
 }
