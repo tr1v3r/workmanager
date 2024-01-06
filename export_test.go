@@ -7,17 +7,21 @@ import (
 	"time"
 
 	"github.com/tr1v3r/pkg/log"
+
 	wm "github.com/tr1v3r/workmanager"
 )
 
 func TestWork(t *testing.T) {
 	mgr := wm.NewWorkerManager(context.Background())
 
+	mgr.RegisterWorker("printer", PrinterBuilder)
+
 	mgr.RegisterStep("step_a", func(ctx context.Context, work wm.Work, target wm.WorkTarget, nexts ...func(wm.WorkTarget)) {
 		if err := ctx.Err(); err != nil {
 			return
 		}
-		results, err := work(target, nil)
+		target.(*wm.DummyTestTarget).Remark += "<step_a>"
+		results, err := work(target, map[wm.WorkerName]wm.WorkerConfig{"printer": &wm.DummyConfig{}})
 		if err != nil {
 			t.Errorf("step_a work fail: %s", err)
 			return
@@ -32,7 +36,8 @@ func TestWork(t *testing.T) {
 		if err := ctx.Err(); err != nil {
 			return
 		}
-		results, err := work(target, nil)
+		target.(*wm.DummyTestTarget).Remark += "<step_b>"
+		results, err := work(target, map[wm.WorkerName]wm.WorkerConfig{"printer": &wm.DummyConfig{}})
 		if err != nil {
 			t.Errorf("step_b work fail: %s", err)
 			return
@@ -50,13 +55,22 @@ func TestWork(t *testing.T) {
 	task.(*wm.Task).TaskToken = "example_token_123"
 	mgr.AddTask(task)
 
-	err := mgr.Recv("step_a", &wm.DummyTestTarget{DummyTarget: wm.DummyTarget{TaskToken: task.Token()}, Step: "step_a"})
+	target := &wm.DummyTestTarget{DummyTarget: wm.DummyTarget{TaskToken: task.Token()}, Step: "step_a"}
+	err := mgr.Recv("step_a", target)
 	if err != nil {
 		fmt.Printf("send target fail: %s", err)
 	}
 
-	time.Sleep(10 * time.Second)
-	// time.Sleep(100 * time.Millisecond)
+	for i := 0; i < 10; i++ {
+		time.Sleep(100 * time.Millisecond)
+
+		if target.Remark != "<step_a><step_b>" {
+			continue
+		}
+	}
+	if target.Remark != "<step_a><step_b>" {
+		t.Errorf("target remark not match: expect <step_a><step_b>, got %s", target.Remark)
+	}
 }
 
 var printer = new(Printer)
@@ -71,7 +85,7 @@ type Printer struct {
 func (p *Printer) Work(targets ...wm.WorkTarget) (results []wm.WorkTarget, err error) {
 	p.counter++
 
-	log.Info("[%d] printer working", p.counter)
+	log.Debug("[%d] printer working", p.counter)
 	for _, target := range targets {
 		if t, ok := target.(*wm.DummyTestTarget); ok {
 			// t := *t

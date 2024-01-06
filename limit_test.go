@@ -28,7 +28,8 @@ func Test_limitController(t *testing.T) {
 	t.Log("limit size ok")
 
 	var newLimit rate.Limit = 9
-	limitCtr.SetLimit(newLimit, 1, limitStepA, limitStepC)
+	var newBurst int = 1
+	limitCtr.SetLimit(newLimit, newBurst, limitStepA, limitStepC)
 	if limitCtr.getLimiter(limitStepA).Limit() != newLimit ||
 		limitCtr.getLimiter(limitStepB).Limit() != defaultLimit ||
 		limitCtr.getLimiter(limitStepC).Limit() != newLimit {
@@ -41,7 +42,11 @@ func Test_limitController(t *testing.T) {
 	}
 	t.Log("set limit ok")
 
-	for _, step := range []WorkStep{limitStepA, limitStepB, limitStepC} {
+	for step, limit := range map[WorkStep]int{
+		limitStepA: int(newLimit) + newBurst,
+		limitStepB: int(defaultLimit) + defaultBurst,
+		limitStepC: int(newLimit) + newBurst,
+	} {
 		dataCh := make(chan struct{}, 999)
 		limiter := limitCtr.getLimiter(step)
 
@@ -57,8 +62,8 @@ func Test_limitController(t *testing.T) {
 				}
 			}
 		}
-		if len(dataCh) != int(limiter.Limit())+defaultBurst {
-			t.Errorf("%s limit size error: expect %f, got %d", step, limiter.Limit(), len(dataCh))
+		if len(dataCh) != limit {
+			t.Errorf("%s limit size error: expect %d, got %d", step, limit, len(dataCh))
 		}
 	}
 	t.Log("limiter works ok")

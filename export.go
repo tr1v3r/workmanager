@@ -113,8 +113,11 @@ func AddTask(task WorkTask) { defaultWorkerMgr.AddTask(task) }
 // GetTask ...
 func GetTask(token string) WorkTask { return defaultWorkerMgr.GetTask(token) }
 
-// CancelTask ...
+// CancelTask cancel task
 func CancelTask(token string) error { return defaultWorkerMgr.CancelTask(token) }
+
+// FinishTask finish task
+func FinishTask(token string) error { return defaultWorkerMgr.FinishTask(token) }
 
 // ================================================
 // ================ Pipe Operation ================

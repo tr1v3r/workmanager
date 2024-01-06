@@ -243,7 +243,7 @@ func (wm *WorkerManager) StepStatus(step WorkStep) (string, error) {
 	buf.WriteString(fmt.Sprintf("pool status: [%d/%d]\n", num, size))
 
 	limit, burst, tokens := wm.LimiterStatus(step)
-	buf.WriteString(fmt.Sprintf("limiter status: limit: %f, burst:%d, tokens:%f\n", limit, burst, tokens))
+	buf.WriteString(fmt.Sprintf("limiter status: limit: %.2f, burst:%d, tokens:%.2f\n", limit, burst, tokens))
 
 	before, after := wm.CallbackStatus(step)
 	buf.WriteString(fmt.Sprintf("callback status: has %d before hooks, %d after hooks\n", before, after))

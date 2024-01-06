@@ -8,20 +8,22 @@ import (
 )
 
 func TestPipeController_recver(t *testing.T) {
+	task := NewTask(context.Background())
+	task.(*Task).TaskToken = "example_token_123"
+
 	mgr := NewWorkerManager(context.Background())
 
-	mgr.RegisterWorker(DummyWorkerA, DummyBuilder)
-	mgr.RegisterWorker(DummyWorkerB, DummyBuilder)
+	mgr.RegisterWorker(DummyWorkerA, DummyBuilder(DummyWorkerA))
+	mgr.RegisterWorker(DummyWorkerB, DummyBuilder(DummyWorkerB))
 
 	mgr.RegisterStep(StepA, DummyStepRunner, StepB)
 	mgr.RegisterStep(StepB, TransferRunner(func(_ context.Context, target WorkTarget) {
-		fmt.Printf("%s got target %+v, transfering...", StepB, target)
+		fmt.Printf("%s got target %+v, transfering...\n", StepB, target)
+		task.Finish()
 	}))
 
-	mgr.Serve()
+	mgr.Serve(StepA, StepB)
 
-	task := NewTask(context.Background())
-	task.(*Task).TaskToken = "example_token_123"
 	mgr.AddTask(task)
 
 	err := mgr.Recv(StepA, &DummyTestTarget{DummyTarget: DummyTarget{TaskToken: task.Token()}, Step: StepA})
