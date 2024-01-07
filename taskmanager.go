@@ -6,24 +6,13 @@ import (
 )
 
 // NewTaskController ...
-func NewTaskController(ctx context.Context) *taskController { // nolint
-	return &taskController{
-		ctx:      ctx,
-		mu:       new(sync.RWMutex),
-		tokenMap: make(map[string]WorkTask),
-	}
+func NewTaskController() *taskController { // nolint
+	return &taskController{tokenMap: make(map[string]WorkTask)}
 }
 
 type taskController struct {
-	ctx context.Context
-
-	mu       *sync.RWMutex
+	mu       sync.RWMutex
 	tokenMap map[string]WorkTask
-}
-
-func (t taskController) WithContext(ctx context.Context) *taskController {
-	t.ctx = ctx
-	return &t
 }
 
 func (t *taskController) AddTask(task WorkTask) {

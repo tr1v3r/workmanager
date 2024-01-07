@@ -21,7 +21,7 @@ func NewWorkerManager(ctx context.Context, opts ...func(*WorkerManager) *WorkerM
 	return &WorkerManager{
 		ctx: ctx,
 
-		taskController:     NewTaskController(ctx),
+		taskController:     NewTaskController(),
 		pipeController:     NewPipeController(ctx),
 		poolController:     NewPoolController(ctx),
 		limitController:    NewLimitController(ctx),
@@ -53,7 +53,6 @@ type WorkerManager struct {
 // WithContext set context
 func (wm WorkerManager) WithContext(ctx context.Context) *WorkerManager {
 	wm.ctx = ctx
-	wm.taskController = wm.taskController.WithContext(ctx)
 	return &wm
 }
 
