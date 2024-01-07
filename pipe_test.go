@@ -9,7 +9,7 @@ import (
 
 func TestPipeController_recver(t *testing.T) {
 	task := NewTask(context.Background())
-	task.(*Task).TaskToken = "example_token_123"
+	task.(*Task).taskToken = "example_token_123"
 
 	mgr := NewWorkerManager(context.Background())
 
@@ -36,7 +36,7 @@ func TestPipeController_recver(t *testing.T) {
 	}
 
 	resultTask := mgr.GetTask(task.Token()).(*Task)
-	t.Logf("got task: { token: %s, finished: %t }\n", resultTask.TaskToken, resultTask.Finished)
+	t.Logf("got task: { token: %s, finished: %t }\n", resultTask.Token(), resultTask.IsFinished())
 }
 
 func TestPipeController_mitm(t *testing.T) {

@@ -39,7 +39,7 @@ func ExampleWorkerManager_newInstance() {
 	mgr.Serve(wm.StepA, wm.StepB)
 
 	task := wm.NewTask(context.Background())
-	task.(*wm.Task).TaskToken = "example_token_123"
+	task.(*wm.Task).SetToken("example_token_123")
 	mgr.AddTask(task)
 
 	err := mgr.Recv(wm.StepA, &wm.DummyTestTarget{DummyTarget: wm.DummyTarget{TaskToken: task.Token()}, Step: wm.StepA})
@@ -51,7 +51,7 @@ func ExampleWorkerManager_newInstance() {
 	}
 
 	resultTask := mgr.GetTask(task.Token()).(*wm.Task)
-	fmt.Printf("task final status: { token: %s, finished: %t }", resultTask.TaskToken, resultTask.Finished)
+	fmt.Printf("task final status: { token: %s, finished: %t }", resultTask.Token(), resultTask.IsFinished())
 
 	// Output:
 	// [step_a] before callback got target: &{DummyTarget:{TaskToken:example_token_123} Step:step_a Remark: Count:0}
@@ -86,7 +86,7 @@ func ExampleWorkerManager_singleton() {
 	wm.Serve(wm.StepA, wm.StepB)
 
 	task := wm.NewTask(context.Background())
-	task.(*wm.Task).TaskToken = "example_token_123"
+	task.(*wm.Task).SetToken("example_token_123")
 	wm.AddTask(task)
 
 	err := wm.Recv(wm.StepA, &wm.DummyTestTarget{DummyTarget: wm.DummyTarget{TaskToken: task.Token()}, Step: wm.StepA})
@@ -98,7 +98,7 @@ func ExampleWorkerManager_singleton() {
 	}
 
 	resultTask := wm.GetTask(task.Token()).(*wm.Task)
-	fmt.Printf("task final status: { token: %s, finished: %t }", resultTask.TaskToken, resultTask.Finished)
+	fmt.Printf("task final status: { token: %s, finished: %t }", resultTask.Token(), resultTask.IsFinished())
 
 	// Output:
 	// [step_a] before callback got target: &{DummyTarget:{TaskToken:example_token_123} Step:step_a Remark: Count:0}

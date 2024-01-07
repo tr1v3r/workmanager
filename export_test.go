@@ -52,7 +52,7 @@ func TestWork(t *testing.T) {
 	mgr.Serve(wm.StepA, wm.StepB)
 
 	task := wm.NewTask(context.Background())
-	task.(*wm.Task).TaskToken = "example_token_123"
+	task.(*wm.Task).SetToken("example_token_123")
 	mgr.AddTask(task)
 
 	target := &wm.DummyTestTarget{DummyTarget: wm.DummyTarget{TaskToken: task.Token()}, Step: "step_a"}
