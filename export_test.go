@@ -16,7 +16,7 @@ func TestWork(t *testing.T) {
 
 	mgr.RegisterWorker("printer", PrinterBuilder)
 
-	mgr.RegisterStep("step_a", func(ctx context.Context, work wm.Work, target wm.WorkTarget, nexts ...func(wm.WorkTarget)) {
+	mgr.RegisterStep(wm.StepA, func(ctx context.Context, work wm.Work, target wm.WorkTarget, nexts ...func(wm.WorkTarget)) {
 		if err := ctx.Err(); err != nil {
 			return
 		}
@@ -31,8 +31,8 @@ func TestWork(t *testing.T) {
 				next(result)
 			}
 		}
-	}, "step_b")
-	mgr.RegisterStep("step_b", func(ctx context.Context, work wm.Work, target wm.WorkTarget, _ ...func(wm.WorkTarget)) {
+	}, wm.StepB)
+	mgr.RegisterStep(wm.StepB, func(ctx context.Context, work wm.Work, target wm.WorkTarget, _ ...func(wm.WorkTarget)) {
 		if err := ctx.Err(); err != nil {
 			return
 		}
@@ -49,7 +49,7 @@ func TestWork(t *testing.T) {
 
 	// mgr.SetPipe("step_a", wm.PipeChSize(8))
 
-	mgr.Serve("step_a", "step_b")
+	mgr.Serve(wm.StepA, wm.StepB)
 
 	task := wm.NewTask(context.Background())
 	task.(*wm.Task).TaskToken = "example_token_123"

@@ -77,7 +77,7 @@ func (wm *WorkerManager) Work(target WorkTarget, configs map[WorkerName]WorkerCo
 }
 
 func (wm *WorkerManager) work(worker Worker, arg WorkTarget) (res []WorkTarget, err error) {
-	defer catchPanic("work panic")
+	defer catchPanic(wm.ctx, "work panic")
 
 	// call worker's Work
 	res, err = worker.Work(arg)

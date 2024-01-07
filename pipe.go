@@ -43,6 +43,12 @@ func newPipeWithOpts(opts ...PipeOption) *pipe {
 	return newPipe(ch, ch)
 }
 
+////////////////////////////////////////////////////////////
+//
+// code for pipe struct
+//
+////////////////////////////////////////////////////////////
+
 // pipe used for trans data between steps
 type pipe struct {
 	// recv recv chan for step
@@ -51,25 +57,42 @@ type pipe struct {
 	send chan<- WorkTarget
 }
 
-func (p *pipe) Set(recv <-chan WorkTarget, send chan<- WorkTarget) {
-	p.SetRecv(recv)
-	p.SetSend(send)
+func (p *pipe) set(recv <-chan WorkTarget, send chan<- WorkTarget) {
+	p.setRecv(recv)
+	p.setSend(send)
 }
-func (p *pipe) SetRecv(recv <-chan WorkTarget) { p.recv = recv }
-func (p *pipe) SetSend(send chan<- WorkTarget) { p.send = send }
+func (p *pipe) setRecv(recv <-chan WorkTarget) { p.recv = recv }
+func (p *pipe) setSend(send chan<- WorkTarget) { p.send = send }
 
-func (p *pipe) Status() (mitm bool, recvLen, recvCap, sendLen, sendCap int) {
+func (p *pipe) check() error {
+	if p == nil {
+		return ErrPipeNotFound
+	}
+	if p.recv == nil {
+		return ErrPipeRecvChanNil
+	}
+	if p.send == nil {
+		return ErrPipeSendChanNil
+	}
+	return nil
+}
+
+func (p *pipe) status() (mitm bool, recvLen, recvCap, sendLen, sendCap int) {
 	return reflect.ValueOf(p.recv).Pointer() != reflect.ValueOf(p.send).Pointer(),
 		len(p.recv), cap(p.recv),
 		len(p.send), cap(p.send)
 }
 
+////////////////////////////////////////////////////////////
+//
+// code for pipe controller
+//
+////////////////////////////////////////////////////////////
+
 type pipeController struct {
 	mu      sync.RWMutex
 	pipeMap map[WorkStep]*pipe
 }
-
-func (ctr *pipeController) HasPipe(step WorkStep) bool { return ctr.getPipe(step) != nil }
 
 // InitializePipe initialize pipe for step
 // build a new chan for recv and send to step
@@ -84,57 +107,10 @@ func (ctr *pipeController) SetPipe(step WorkStep, opts ...PipeOption) {
 	ctr.setPipe(step, newPipeWithOpts(opts...))
 }
 
-func (ctr *pipeController) GetRecvChans(steps ...WorkStep) (chs []<-chan WorkTarget) {
-	for _, step := range steps {
-		chs = append(chs, ctr.GetRecvChan(step))
-	}
-	return chs
-}
-func (ctr *pipeController) GetSendChans(steps ...WorkStep) (chs []chan<- WorkTarget) {
-	for _, step := range steps {
-		chs = append(chs, ctr.GetSendChan(step))
-	}
-	return chs
-}
-func (ctr *pipeController) GetRecvChan(step WorkStep) <-chan WorkTarget {
-	if pipe := ctr.getPipe(step); pipe != nil {
-		return pipe.recv
-	}
-	return nil
-}
-func (ctr *pipeController) GetSendChan(step WorkStep) chan<- WorkTarget {
-	if pipe := ctr.getPipe(step); pipe != nil {
-		return pipe.send
-	}
-	return nil
-}
-
-func (ctr *pipeController) SetPipeChan(step WorkStep, recv <-chan WorkTarget, send chan<- WorkTarget) {
-	if pipe := ctr.getPipe(step); pipe != nil { // if found pipe for step
-		pipe.Set(recv, send)
-	} else { // if not found, init one and set recv and send
-		ctr.InitializePipe(step).Set(recv, send)
-	}
-}
-func (ctr *pipeController) SetRecvChan(step WorkStep, recv <-chan WorkTarget) {
-	if pipe := ctr.getPipe(step); pipe != nil {
-		pipe.SetRecv(recv)
-	} else {
-		ctr.InitializePipe(step).SetRecv(recv)
-	}
-}
-func (ctr *pipeController) SetSendChan(step WorkStep, send chan<- WorkTarget) {
-	if pipe := ctr.getPipe(step); pipe != nil {
-		pipe.SetSend(send)
-	} else {
-		ctr.InitializePipe(step).SetSend(send)
-	}
-}
-
 // MITMSendChan set mitm send chan for step
 func (ctr *pipeController) MITMSendChan(step WorkStep, send chan<- WorkTarget) chan<- WorkTarget {
-	originSend := ctr.GetSendChan(step)
-	ctr.SetSendChan(step, send)
+	originSend := ctr.getSendChan(step)
+	ctr.setSendChan(step, send)
 	return originSend
 }
 
@@ -147,11 +123,68 @@ func (ctr *pipeController) RemovePipe(steps ...WorkStep) {
 	}
 }
 
+// PipeStatus return pipe status
 func (ctr *pipeController) PipeStatus(step WorkStep) (mitm bool, recvLen, recvCap, sendLen, sendCap int) {
 	if pipe := ctr.getPipe(step); pipe != nil {
-		return pipe.Status()
+		return pipe.status()
 	}
 	return
+}
+
+func (ctr *pipeController) CheckPipe(step WorkStep) error {
+	if pipe := ctr.getPipe(step); pipe != nil {
+		return pipe.check()
+	}
+	return ErrPipeNotFound
+}
+
+func (ctr *pipeController) hasPipe(step WorkStep) bool { return ctr.getPipe(step) != nil }
+
+func (ctr *pipeController) getRecvChans(steps ...WorkStep) (chs []<-chan WorkTarget) {
+	for _, step := range steps {
+		chs = append(chs, ctr.getRecvChan(step))
+	}
+	return chs
+}
+func (ctr *pipeController) getSendChans(steps ...WorkStep) (chs []chan<- WorkTarget) {
+	for _, step := range steps {
+		chs = append(chs, ctr.getSendChan(step))
+	}
+	return chs
+}
+func (ctr *pipeController) getRecvChan(step WorkStep) <-chan WorkTarget {
+	if pipe := ctr.getPipe(step); pipe != nil {
+		return pipe.recv
+	}
+	return nil
+}
+func (ctr *pipeController) getSendChan(step WorkStep) chan<- WorkTarget {
+	if pipe := ctr.getPipe(step); pipe != nil {
+		return pipe.send
+	}
+	return nil
+}
+
+func (ctr *pipeController) setPipeChan(step WorkStep, recv <-chan WorkTarget, send chan<- WorkTarget) {
+	if pipe := ctr.getPipe(step); pipe != nil { // if found pipe for step
+		pipe.set(recv, send)
+	} else { // if not found, init one and set recv and send
+		ctr.InitializePipe(step).set(recv, send)
+	}
+}
+func (ctr *pipeController) setRecvChan(step WorkStep, recv <-chan WorkTarget) {
+	if pipe := ctr.getPipe(step); pipe != nil {
+		pipe.setRecv(recv)
+	} else {
+		ctr.InitializePipe(step).setRecv(recv)
+	}
+}
+func (ctr *pipeController) setSendChan(step WorkStep, send chan<- WorkTarget) {
+	if pipe := ctr.getPipe(step); pipe != nil {
+		pipe.setSend(send)
+	} else {
+		ctr.InitializePipe(step).setSend(send)
+	}
 }
 
 func (ctr *pipeController) setPipe(step WorkStep, pipe *pipe) {

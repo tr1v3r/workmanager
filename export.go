@@ -123,18 +123,10 @@ func FinishTask(token string) error { return defaultWorkerMgr.FinishTask(token) 
 // ================ Pipe Operation ================
 // ================================================
 
-// GetSendChan ...
-func GetSendChan(step WorkStep) chan<- WorkTarget {
-	return defaultWorkerMgr.GetSendChan(step)
-}
-
-// SetSendChan ...
-func SetSendChan(step WorkStep, ch chan<- WorkTarget) { defaultWorkerMgr.SetSendChan(step, ch) }
+// SetPipe set step's pipe
+func SetPipe(step WorkStep, opts ...PipeOption) { defaultWorkerMgr.SetPipe(step, opts...) }
 
 // MITMSendChan ...
 func MITMSendChan(step WorkStep, newSendCh chan<- WorkTarget) (oldSendCh chan<- WorkTarget) {
 	return defaultWorkerMgr.MITMSendChan(step, newSendCh)
 }
-
-// SetPipe set step's pipe
-func SetPipe(step WorkStep, opts ...PipeOption) { defaultWorkerMgr.SetPipe(step, opts...) }

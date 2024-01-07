@@ -90,18 +90,26 @@ func (wm *WorkerManager) RegisterStep(current WorkStep, stepRun StepRunner, next
 	wm.mu.Lock()
 	defer wm.mu.Unlock()
 	wm.stepRunners[current] = func(wm *WorkerManager) error {
-		defer catchPanic("%s step runner panic", current)
+		defer wrapPanic("%s step runner panic", current)
+		if err := wm.CheckStep(current); err != nil {
+			panic(fmt.Errorf("check current step %s fail: %w", current, err))
+		}
+		for _, step := range nexts {
+			if err := wm.CheckStep(step); err != nil {
+				panic(fmt.Errorf("check next step %s fail: %w", step, err))
+			}
+		}
 
 		// get from current's recv channel, stop when step(pipe) removed
 		// get limiter every round, in case of limiter updated
-		for ch := wm.GetRecvChan(current); ch != nil; _ = wm.getLimiter(current).Wait(wm.ctx) {
+		for ch := wm.getRecvChan(current); ch != nil; _ = wm.getLimiter(current).Wait(wm.ctx) {
 			select {
 			case <-wm.ctx.Done():
-				log.Info("step %s runner stopped", current)
+				log.CtxInfo(wm.ctx, "step %s runner stopped", current)
 				return wm.ctx.Err()
 			case target := <-ch:
 				wm.run(current, func() {
-					defer catchPanic("%s step work panic", current)
+					defer catchPanic(wm.ctx, "%s step work panic", current)
 
 					task := wm.GetTask(target.Token())
 					if wm.cacher != nil && !wm.cacher.Allow(target) {
@@ -113,7 +121,7 @@ func (wm *WorkerManager) RegisterStep(current WorkStep, stepRun StepRunner, next
 					stepRun(task.Context(),
 						wrapWork(task.Context(), callbacks.BeforeWork(), wm.Work, callbacks.AfterWork()),
 						target,
-						wrapChan(wm.GetSendChans(nexts...))...,
+						wrapChan(wm.getSendChans(nexts...))...,
 					)
 				})
 			}
@@ -144,6 +152,10 @@ func wrapWork(ctx context.Context, before []StepCallback, work Work, after []Ste
 
 func wrapChan(chs []chan<- WorkTarget) (recvs []func(WorkTarget)) {
 	for _, ch := range chs {
+		if ch == nil {
+			continue
+		}
+
 		ch := ch
 		recvs = append(recvs, func(target WorkTarget) { ch <- target })
 	}
@@ -175,21 +187,22 @@ func (wm *WorkerManager) InitializeStep(step WorkStep, opts ...PipeOption) {
 	if wm.getLimiter(step) == wm.defaultLimiter {
 		wm.SetLimit(0, 0, step)
 	}
-	if !wm.HasPipe(step) {
+	if !wm.hasPipe(step) {
 		wm.InitializePipe(step, opts...)
 	}
 }
 
-// CheckStep check if step is ok
+// CheckStep check if step is ready
 func (wm *WorkerManager) CheckStep(step WorkStep) error {
-	switch {
-	case !wm.hasStep(step):
-		return fmt.Errorf("step runner not found")
-	case !wm.HasPipe(step):
-		return fmt.Errorf("pipe not found")
-	default:
-		return nil
+	if !wm.hasStep(step) {
+		return ErrStepRunnerNotFound
 	}
+
+	if err := wm.CheckPipe(step); err != nil {
+		return fmt.Errorf("check step's pipe fail: %w", err)
+	}
+
+	return nil
 }
 
 // RemoveStep remove steps
@@ -271,13 +284,15 @@ func (wm *WorkerManager) Serve(steps ...WorkStep) {
 	defer wm.mu.RUnlock()
 	for _, step := range steps {
 		wm.InitializeStep(step)
-		go wm.stepRunners[step](wm) // nolint
+		// call step run in defer func to avoid panic when step not ready and another step runner call it
+		// cause step runner will check step status
+		defer func(stepRun func(*WorkerManager) error) { go stepRun(wm) }(wm.stepRunners[step])
 	}
 }
 
 // Recv put target in specified step's channel
 func (wm *WorkerManager) Recv(step WorkStep, target WorkTarget) error {
-	if ch := wm.GetSendChan(step); ch != nil {
+	if ch := wm.getSendChan(step); ch != nil {
 		ch <- target
 		return nil
 	}

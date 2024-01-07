@@ -40,35 +40,36 @@ func TestPipeController_recver(t *testing.T) {
 }
 
 func TestPipeController_mitm(t *testing.T) {
-	mgr := NewPipeController(nil, StepA, StepB)
+	mgr := NewPipeController(context.TODO(), StepA, StepB)
+
+	// raw pipe
 
 	// read all data for step A and print to check mitm works or not
-	recv := mgr.GetRecvChan(StepA)
-	go func() {
-		for {
-			select {
-			case data := <-recv:
-				t.Logf("got data: %s", data.Token())
-			}
-		}
-	}()
+	recv := mgr.getRecvChan(StepA)
 
-	mgr.GetSendChan(StepA) <- &DummyTestTarget{DummyTarget: DummyTarget{TaskToken: "Raw Target 1"}, Step: StepA}
+	const token = "task token"
+	mgr.getSendChan(StepA) <- &DummyTestTarget{DummyTarget: DummyTarget{TaskToken: token}, Step: StepA}
 
-	newSendChan := make(chan WorkTarget, 256)
-	// send := mgr.GetSendChan(StepA)
-	// mgr.SetSendChan(StepA, newSendChan)
-
-	// return origin send ch
-	send := mgr.MITMSendChan(StepA, newSendChan)
-
-	mgr.GetSendChan(StepA) <- &DummyTestTarget{DummyTarget: DummyTarget{TaskToken: "Raw Target 2"}, Step: StepA}
-
-	select {
-	case data := <-newSendChan:
-		data.(*DummyTestTarget).DummyTarget.TaskToken = "Converted Target"
-		send <- data // send data to origin ch after processed
+	if data := <-recv; data.Token() != token {
+		t.Errorf("got data for stepA fail: expect task token: %s, got: %s", token, data.Token())
 	}
 
-	time.Sleep(time.Second)
+	// mitmed pipe
+
+	// return origin send ch
+	newSend := make(chan WorkTarget, 256)
+	originSend := mgr.MITMSendChan(StepA, newSend)
+
+	mgr.getSendChan(StepA) <- &DummyTestTarget{DummyTarget: DummyTarget{TaskToken: token}, Step: StepA}
+
+	const replacedToken = "replaced task token"
+	select {
+	case data := <-newSend:
+		data.(*DummyTestTarget).DummyTarget.TaskToken = replacedToken
+		originSend <- data // send data to origin ch after processed
+	}
+
+	if data := <-recv; data.Token() != replacedToken {
+		t.Errorf("got mitmed data for stepA fail: expect task token: %s, got: %s", replacedToken, data.Token())
+	}
 }
